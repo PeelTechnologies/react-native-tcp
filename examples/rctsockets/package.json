@@ -1,0 +1,18 @@
+{
+  "name": "rctsockets",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "react-native start"
+  },
+  "browser": {
+    "net": "react-native-tcp"
+  },
+  "dependencies": {
+    "buffer": "^3.5.3",
+    "events": "^1.1.0",
+    "react-native": "^0.15.0",
+    "react-native-tcp": "../../",
+    "util": "^0.10.3"
+  }
+}

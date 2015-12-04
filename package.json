@@ -1,0 +1,41 @@
+{
+  "name": "react-native-tcp",
+  "version": "1.1.1",
+  "description": "node's dgram API for react-native",
+  "main": "TcpSockets.js",
+  "scripts": {
+    "start": "exit 1"
+  },
+  "browser": {
+    "net": "./TcpSockets.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PeelTechnologies/react-native-tcp"
+  },
+  "keywords": [
+    "react-component",
+    "reactnative",
+    "react-native",
+    "net",
+    "tcp",
+    "sockets",
+    "ios",
+    "android"
+  ],
+  "author": {
+    "name": "Andy Prock",
+    "email": "aprock@gmail.com"
+  },
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/PeelTechnologies/react-native-tcp/issues"
+  },
+  "homepage": "https://github.com/PeelTechnologies/react-native-tcp",
+  "dependencies": {
+    "base64-js": "0.0.8",
+    "events": "^1.0.2",
+    "inherits": "^2.0.1",
+    "util": "^0.10.3"
+  }
+}
