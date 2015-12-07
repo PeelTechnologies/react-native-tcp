@@ -12,7 +12,7 @@
 #import "RCTBridgeModule.h"
 #import "GCDAsyncSocket.h"
 
-NSString *const RCTUDPErrorDomain = @"RCTUDPErrorDomain";
+NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
 @interface TcpSocketClient()
 {
@@ -63,8 +63,8 @@ NSString *const RCTUDPErrorDomain = @"RCTUDPErrorDomain";
 
     _tcpSocket = [[GCDAsyncSocket alloc] initWithDelegate:self delegateQueue:[self methodQueue]];
     BOOL result;
-    if (host) {
-        result = [_tcpSocket connectToHost:host onPort:port error:error];
+    if (_address) {
+        result = [_tcpSocket connectToHost:_address onPort:_port error:error];
     }
 
     return result;
@@ -112,8 +112,8 @@ NSString *const RCTUDPErrorDomain = @"RCTUDPErrorDomain";
 {
     NSDictionary *userInfo = [NSDictionary dictionaryWithObject:errMsg forKey:NSLocalizedDescriptionKey];
 
-    return [NSError errorWithDomain:RCTUDPErrorDomain
-                               code:RCTUDPBadParamError
+    return [NSError errorWithDomain:RCTTCPErrorDomain
+                               code:RCTTCPBadParamError
                            userInfo:userInfo];
 }
 
@@ -121,8 +121,8 @@ NSString *const RCTUDPErrorDomain = @"RCTUDPErrorDomain";
 {
     NSDictionary *userInfo = [NSDictionary dictionaryWithObject:errMsg forKey:NSLocalizedDescriptionKey];
 
-    return [NSError errorWithDomain:RCTUDPErrorDomain
-                               code:RCTUDPInvalidInvocationError
+    return [NSError errorWithDomain:RCTTCPErrorDomain
+                               code:RCTTCPInvalidInvocationError
                            userInfo:userInfo];
 }
 
@@ -130,8 +130,8 @@ NSString *const RCTUDPErrorDomain = @"RCTUDPErrorDomain";
 {
     NSDictionary *userInfo = [NSDictionary dictionaryWithObject:errMsg forKey:NSLocalizedDescriptionKey];
 
-    return [NSError errorWithDomain:RCTUDPErrorDomain
-                               code:RCTUDPSendFailedError
+    return [NSError errorWithDomain:RCTTCPErrorDomain
+                               code:RCTTCPSendFailedError
                            userInfo:userInfo];
 }
 

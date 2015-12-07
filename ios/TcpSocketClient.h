@@ -9,21 +9,21 @@
 #import <Foundation/Foundation.h>
 #import "RCTBridgeModule.h"
 
-extern NSString *const RCTUDPErrorDomain;
+extern NSString *const RCTTCPErrorDomain;
 
-enum RCTUDPError
+enum RCTTCPError
 {
-    RCTUDPNoError = 0,           // Never used
-    RCTUDPInvalidInvocationError,// Invalid method invocation
-    RCTUDPBadConfigError,        // Invalid configuration
-    RCTUDPBadParamError,         // Invalid parameter was passed
-    RCTUDPSendTimeoutError,      // A send operation timed out
-    RCTUDPSendFailedError,       // A send operation failed
-    RCTUDPClosedError,           // The socket was closed
-    RCTUDPOtherError,            // Description provided in userInfo
+    RCTTCPNoError = 0,           // Never used
+    RCTTCPInvalidInvocationError,// Invalid method invocation
+    RCTTCPBadConfigError,        // Invalid configuration
+    RCTTCPBadParamError,         // Invalid parameter was passed
+    RCTTCPSendTimeoutError,      // A send operation timed out
+    RCTTCPSendFailedError,       // A send operation failed
+    RCTTCPClosedError,           // The socket was closed
+    RCTTCPOtherError,            // Description provided in userInfo
 };
 
-typedef enum RCTUDPError RCTUDPError;
+typedef enum RCTTCPError RCTTCPError;
 
 @class TcpSocketClient;
 
@@ -43,11 +43,11 @@ typedef enum RCTUDPError RCTUDPError;
 /// @name Class Methods
 ///---------------------------------------------------------------------------------------
 /**
- * Initializes a new RCTUDPClient
+ * Initializes a new RCTTCPClient
  *
  * @param delegate The object holding the callbacks, usually 'self'.
  *
- * @return New RCTUDPClient
+ * @return New RCTTCPClient
  */
 
 + (id)socketClientWithConfig:(id<SocketClientDelegate>) delegate;
