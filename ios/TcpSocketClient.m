@@ -17,12 +17,10 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 @interface TcpSocketClient()
 {
 @private
-    uint16_t _port;
-    NSString* _address;
     GCDAsyncSocket *_tcpSocket;
     id<SocketClientDelegate> _clientDelegate;
     NSMutableDictionary* _pendingSends;
-    long tag;
+    long _sendTag;
 }
 
 - (id)initWithConfig:(id<SocketClientDelegate>) aDelegate;
@@ -47,10 +45,9 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     return self;
 }
 
-- (BOOL) connect:(u_int16_t)port host:(NSString *)host error:(NSError **) error
+- (BOOL)connect:(NSString *)host port:(int)port withOptions:(NSDictionary *)options error:(NSError **)error
 {
-
-    if (_port) {
+    if (_tcpSocket) {
         if (error) {
             *error = [self badInvocationError:@"this client's socket is already connected"];
         }
@@ -58,13 +55,25 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         return false;
     }
 
-    _port = port;
-    _address = host;
-
     _tcpSocket = [[GCDAsyncSocket alloc] initWithDelegate:self delegateQueue:[self methodQueue]];
-    BOOL result;
-    if (_address) {
-        result = [_tcpSocket connectToHost:_address onPort:_port error:error];
+    BOOL result = false;
+
+    NSString *localAddress = (options?options[@"localAddress"]:nil);
+    NSNumber *localPort = (options?options[@"localPort"]:nil);
+
+    if (!localAddress && !localPort) {
+        result = [_tcpSocket connectToHost:host onPort:port error:error];
+    } else {
+        NSMutableArray *interface = [NSMutableArray arrayWithCapacity:2];
+        [interface addObject: localAddress?localAddress:@""];
+        if (localPort) {
+            [interface addObject:[localPort stringValue]];
+        }
+        result = [_tcpSocket connectToHost:host
+                                    onPort:port
+                              viaInterface:[interface componentsJoinedByString:@":"]
+                               withTimeout:-1
+                                     error:error];
     }
 
     return result;
@@ -83,29 +92,46 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 - (void) writeData:(NSData *)data
           callback:(RCTResponseSenderBlock)callback
 {
-    [_tcpSocket writeData:data withTimeout:-1 tag:tag];
+    [_tcpSocket writeData:data withTimeout:-1 tag:_sendTag];
     if (callback) {
-        [_pendingSends setObject:callback forKey:[NSNumber numberWithLong:tag]];
+        [_pendingSends setObject:callback forKey:[NSNumber numberWithLong:_sendTag]];
     }
 
-    tag++;
+    _sendTag++;
+
     [_tcpSocket readDataWithTimeout:-1 tag:-1];
 }
 
-- (void) close
+- (void)end
 {
     [_tcpSocket disconnectAfterReadingAndWriting];
+}
+
+- (void)destroy
+{
+    [_tcpSocket disconnect];
 }
 
 - (void)socket:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag {
     if (!_clientDelegate) return;
     [_clientDelegate onData:self data:data];
+
     [sock readDataWithTimeout:-1 tag:-1];
 }
 
 - (void)socket:(GCDAsyncSocket *)sock didConnectToHost:(NSString *)host port:(uint16_t)port
 {
     [sock readDataWithTimeout:-1 tag:-1];
+}
+
+- (void)socketDidCloseReadStream:(GCDAsyncSocket *)sock
+{
+}
+
+- (void)socketDidDisconnect:(GCDAsyncSocket *)sock withError:(NSError *)err
+{
+    if (!_clientDelegate) return;
+    [_clientDelegate onClose:self withError:err];
 }
 
 - (NSError *)badParamError:(NSString *)errMsg

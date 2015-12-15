@@ -29,14 +29,17 @@ typedef enum RCTTCPError RCTTCPError;
 
 @protocol SocketClientDelegate <NSObject>
 
+- (void)onConnect:(TcpSocketClient*) client;
 - (void)onData:(TcpSocketClient*) client data:(NSData *)data;
+- (void)onClose:(TcpSocketClient*) client withError:(NSError *)err;
+- (void)onError:(TcpSocketClient*) client withError:(NSError *)err;
 
 @end
 
 @interface TcpSocketClient : NSObject
 
-@property (nonatomic, retain) NSString* id;
-@property (nonatomic, retain) NSString* host;
+@property (nonatomic, retain) NSString * id;
+@property (nonatomic, retain) NSString * host;
 @property (nonatomic) u_int16_t port;
 
 ///---------------------------------------------------------------------------------------
@@ -62,7 +65,7 @@ typedef enum RCTTCPError RCTTCPError;
  * @param host ip address
  * @return true if bound, false if there was an error
  */
-- (BOOL)connect:(u_int16_t) port host:(NSString*) host error:(NSError**)error;
+- (BOOL)connect:(NSString *)host port:(int)port withOptions:(NSDictionary *)options error:(NSError **)error;
 
 /**
  * write data
@@ -71,9 +74,14 @@ typedef enum RCTTCPError RCTTCPError;
 - (void)writeData:(NSData*) data callback:(RCTResponseSenderBlock) callback;
 
 /**
- * close client
+ * end client
  */
-- (void)close;
+- (void)end;
+
+/**
+ * destroy client
+ */
+- (void)destroy;
 
 
 @end

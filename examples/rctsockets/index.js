@@ -10,61 +10,60 @@ var {
 
 global.Buffer = global.Buffer || require('buffer').Buffer;
 
-var telnet = require('./telnet-client');
-var connection = new telnet();
+var net = require('net');
 
-// require('./test/simple/test-dgram-address')
-// require('./test/simple/test-dgram-bind-default-address')
-// require('./test/simple/test-dgram-bind-shared-ports')
+function randomPort() {
+  return Math.random() * 60536 | 0 + 5000 // 60536-65536
+}
 
-// function randomPort() {
-//   return Math.random() * 60536 | 0 + 5000 // 60536-65536
-// }
+var a = net.createConnection({ port: randomPort() }, function(err) {
+  if (err) throw err
 
-// var params = {
-//   host: 'towel.blinkenlights.nl',
-//   port: 23,
-//   shellPrompt: '/ # ',
-//   timeout: 1500,
-//   // removeEcho: 4
-// };
-
-var params = {
-  // host: '10.0.1.207',
-  port: 23,
-  timeout: 15000,
-  passwordPrompt: /Password[: ]*$/i
-  // removeEcho: 4
-};
-
-connection.on('ready', function(prompt) {
-  connection.exec('ls', function(err, response) {
-    console.log(response);
-  });
+  console.log('connected');
 });
 
-connection.on('writedone', function() {
-  console.log('writedone');
+a.on('error', function(err) {
+  console.log(err);
 });
 
-connection.on('loginfailed', function() {
-  console.log('loginfailed');
+var b = net.createConnection({ port: randomPort() }, function(err) {
+  if (err) throw err
+
+  console.log('connected');
 });
 
-connection.on('error', function(error) {
-  console.log(error);
+b.on('error', function(err) {
+  console.log(err);
 });
 
-connection.on('timeout', function() {
-  console.log('socket timeout!');
-  connection.end();
-});
 
-connection.on('close', function() {
-  console.log('connection closed');
-});
-
-connection.connect(params);
+// a.on('message', function(data, rinfo) {
+//   var str = String.fromCharCode.apply(null, new Uint8Array(data));
+//   console.log('a received', str, rinfo)
+//   a.close()
+//   b.close()
+// })
+// 
+// b.on('message', function(data, rinfo) {
+//   var str = String.fromCharCode.apply(null, new Uint8Array(data));
+//   console.log('b received', str, rinfo)
+// 
+//   // echo back
+//   b.send(data, 0, data.length, aPort, '127.0.0.1', function(err) {
+//     if (err) throw err
+// 
+//     console.log('sent')
+//   })
+// })
+// 
+// b.once('listening', function() {
+//   var msg = toByteArray('hello')
+//   a.send(msg, 0, msg.length, bPort, '127.0.0.1', function(err) {
+//     if (err) throw err
+// 
+//     console.log('sent')
+//   })
+// })
 
 var rctsockets = React.createClass({
   render: function() {
