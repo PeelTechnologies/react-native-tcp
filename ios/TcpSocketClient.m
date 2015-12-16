@@ -19,7 +19,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 @private
     GCDAsyncSocket *_tcpSocket;
     id<SocketClientDelegate> _clientDelegate;
-    NSMutableDictionary* _pendingSends;
+    NSMutableDictionary<NSNumber *, RCTResponseSenderBlock> *_pendingSends;
     long _sendTag;
 }
 

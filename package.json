@@ -38,5 +38,9 @@
     "inherits": "^2.0.1",
     "ip-regex": "^1.0.3",
     "util": "^0.10.3"
+  },
+  "devDependencies": {
+    "babel-eslint": "^4.1.6",
+    "eslint-plugin-react": "^3.11.3"
   }
 }

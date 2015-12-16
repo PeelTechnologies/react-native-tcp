@@ -76,8 +76,6 @@ TcpSocket.prototype._debug = function() {
 };
 
 TcpSocket.prototype.connect = function(options, callback) {
-  var self = this;
-
   if (this._state !== STATE.DISCONNECTED) {
     throw new Error('Socket is already bound');
   }
@@ -107,7 +105,7 @@ TcpSocket.prototype.connect = function(options, callback) {
       throw new RangeError('"port" option should be >= 0 and < 65536: ' + port);
     }
   }
-  port |= 0;
+  port |= port;
 
   this._state = STATE.CONNECTING;
   this._connecting = true;
@@ -204,9 +202,9 @@ TcpSocket.prototype._onEvent = function(info) {
   this._debug('received', info.event);
 
   if (info.event === 'connect') {
-    self.writable = self.readable = true;
-    self._state = STATE.CONNECTED;
-    self._connecting = false;
+    this.writable = this.readable = true;
+    this._state = STATE.CONNECTED;
+    this._connecting = false;
   } else if (info.event === 'data') {
     if (this._timeout) {
       clearTimeout(this._timeout);
@@ -218,7 +216,7 @@ TcpSocket.prototype._onEvent = function(info) {
       ? base64.toByteArray(info.data)
       : new global.Buffer(info.data, 'base64');
   } else if (info.event === 'close') {
-    self._state = STATE.DISCONNECTED;
+    this._state = STATE.DISCONNECTED;
   }
 
   this.emit(info.event, info.data);

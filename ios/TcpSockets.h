@@ -16,6 +16,6 @@
 
 @interface TcpSockets : NSObject<SocketClientDelegate, RCTBridgeModule>
 
-+(NSMutableDictionary *)clients;
++(NSMutableDictionary<NSNumber *,TcpSocketClient *> *)clients;
 
 @end
