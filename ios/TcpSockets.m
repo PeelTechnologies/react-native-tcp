@@ -54,7 +54,7 @@ RCT_EXPORT_METHOD(createSocket:(nonnull NSNumber*)cId)
         return;
     }
 
-    client = [TcpSocketClient socketClientWithConfig:self];
+    client = [TcpSocketClient socketClientWithId:cId andConfig:self];
     [_clients setObject:client forKey:cId];
 }
 
@@ -75,21 +75,15 @@ RCT_EXPORT_METHOD(connect:(nonnull NSNumber*)cId
 }
 
 RCT_EXPORT_METHOD(write:(nonnull NSNumber*)cId
-                  string:(NSString *)string
+                  string:(NSString *)base64String
                   encoded:(BOOL)encoded
                   callback:(RCTResponseSenderBlock)callback) {
     TcpSocketClient* client = [TcpSockets findClient:cId callback:callback];
     if (!client) return;
 
-    NSData *data;
-    if (encoded) {
-        // iOS7+
-        // TODO: use https://github.com/nicklockwood/Base64 for compatibility with earlier iOS versions
-        data = [[NSData alloc] initWithBase64EncodedString:string options:0];
-    } else {
-        data = [string dataUsingEncoding:[NSString defaultCStringEncoding]];
-    }
-
+    // iOS7+
+    // TODO: use https://github.com/nicklockwood/Base64 for compatibility with earlier iOS versions
+    NSData *data = [[NSData alloc] initWithBase64EncodedString:base64String options:0];
     [client writeData:data callback:callback];
 }
 
@@ -98,15 +92,14 @@ RCT_EXPORT_METHOD(end:(nonnull NSNumber*)cId
     [TcpSockets endClient:cId callback:callback];
 }
 
-RCT_EXPORT_METHOD(destroy:(nonnull NSNumber*)cId) {
-    [TcpSockets destroyClient:cId];
+RCT_EXPORT_METHOD(destroy:(nonnull NSNumber*)cId
+                 callback:(RCTResponseSenderBlock)callback) {
+    [TcpSockets destroyClient:cId callback:callback];
 }
 
 - (void) onConnect:(TcpSocketClient*) client
 {
-    NSMutableDictionary<NSNumber *,TcpSocketClient *> *_clients = [TcpSockets clients];
-    NSNumber *clientID = [[_clients allKeysForObject:client] objectAtIndex:0];
-    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-event", clientID]
+    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-event", client.id]
                                                     body:@{ @"event": @"connect" }];
 }
 
@@ -121,21 +114,20 @@ RCT_EXPORT_METHOD(destroy:(nonnull NSNumber*)cId) {
 
 - (void) onClose:(TcpSocketClient*) client withError:(NSError *)err
 {
-    [self onError:client withError:err];
+    if (err) {
+      [self onError:client withError:err];
+    }
+
+    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-event", client.id]
+                                                    body:@{ @"event": @"close", @"data": err == nil ? @NO : @YES }];
 
     NSMutableDictionary<NSNumber *,TcpSocketClient *> *_clients = [TcpSockets clients];
-    NSNumber *clientID = [[_clients allKeysForObject:client] objectAtIndex:0];
-
-    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-event", clientID]
-                                                    body:@{ @"event": @"close", @"data": err == nil ? @NO : @YES }];
+    [_clients removeObjectForKey:client.id];
 }
 
 - (void)onError:(TcpSocketClient*) client withError:(NSError *)err {
-    NSMutableDictionary<NSNumber *,TcpSocketClient *> *_clients = [TcpSockets clients];
-    NSNumber *clientID = [[_clients allKeysForObject:client] objectAtIndex:0];
-
     NSString* msg = [[err userInfo] valueForKey:@"NSLocalizedFailureReason"];
-    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-event", clientID]
+    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-event", client.id]
                                                     body:@{ @"event": @"error", @"data": @[msg] }];
 
 }
@@ -147,8 +139,7 @@ RCT_EXPORT_METHOD(destroy:(nonnull NSNumber*)cId) {
     if (!client) {
         if (!callback) {
             RCTLogError(@"%@.missing callback parameter.", [self class]);
-        }
-        else {
+        } else {
             callback(@[[NSString stringWithFormat:@"no client found with id %@", cId]]);
         }
 
@@ -161,17 +152,16 @@ RCT_EXPORT_METHOD(destroy:(nonnull NSNumber*)cId) {
 +(void) endClient:(nonnull NSNumber*)cId
            callback:(RCTResponseSenderBlock)callback
 {
-    NSMutableDictionary<NSNumber *,TcpSocketClient *> *_clients = [TcpSockets clients];
     TcpSocketClient* client = [TcpSockets findClient:cId callback:callback];
     if (!client) return;
 
     [client end];
-    [_clients removeObjectForKey:cId];
 
     if (callback) callback(@[]);
 }
 
 +(void) destroyClient:(nonnull NSNumber*)cId
+             callback:(RCTResponseSenderBlock)callback
 {
     NSMutableDictionary<NSNumber *,TcpSocketClient *> *_clients = [TcpSockets clients];
     TcpSocketClient* client = [TcpSockets findClient:cId callback:nil];

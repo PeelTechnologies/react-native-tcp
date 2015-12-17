@@ -23,21 +23,22 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     long _sendTag;
 }
 
-- (id)initWithConfig:(id<SocketClientDelegate>) aDelegate;
+- (id)initWithClientId:(NSNumber *)clientID andConfig:(id<SocketClientDelegate>) aDelegate;
 
 @end
 
 @implementation TcpSocketClient
 
-+ (id)socketClientWithConfig:(id<SocketClientDelegate>)delegate
++ (id)socketClientWithId:(nonnull NSNumber *)clientID andConfig:(id<SocketClientDelegate>)delegate
 {
-    return [[[self class] alloc] initWithConfig:delegate];
+    return [[[self class] alloc] initWithClientId:clientID andConfig:delegate];
 }
 
-- (id)initWithConfig:(id<SocketClientDelegate>) aDelegate
+- (id)initWithClientId:(NSNumber *)clientID andConfig:(id<SocketClientDelegate>) aDelegate
 {
     self = [super init];
     if (self) {
+        _id = clientID;
         _clientDelegate = aDelegate;
         _pendingSends = [NSMutableDictionary dictionary];
     }
@@ -104,7 +105,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
 - (void)end
 {
-    [_tcpSocket disconnectAfterReadingAndWriting];
+    [_tcpSocket disconnectAfterWriting];
 }
 
 - (void)destroy
@@ -121,6 +122,9 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
 - (void)socket:(GCDAsyncSocket *)sock didConnectToHost:(NSString *)host port:(uint16_t)port
 {
+    if (!_clientDelegate) return;
+    [_clientDelegate onConnect:self];
+
     [sock readDataWithTimeout:-1 tag:-1];
 }
 

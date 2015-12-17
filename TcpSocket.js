@@ -21,6 +21,7 @@ var {
 } = require('react-native');
 var Sockets = NativeModules.TcpSockets;
 var base64 = require('base64-js');
+var Base64Str = require('./base64-str');
 var noop = function () {};
 var instances = 0;
 var STATE = {
@@ -124,6 +125,8 @@ function isLegalPort(port) {
 }
 
 TcpSocket.prototype.setTimeout = function(msecs, callback) {
+  var self = this;
+
   if (this._timeout) {
     clearTimeout(this._timeout);
     this._timeout = null;
@@ -137,7 +140,8 @@ TcpSocket.prototype.setTimeout = function(msecs, callback) {
     var self = this;
     this._timeout = setTimeout(msecs, function() {
       self.emit('timeout');
-      this._timeout = null;
+      self._timeout = null;
+      self.destroy();
     });
   }
 };
@@ -191,11 +195,13 @@ TcpSocket.prototype.end = function(data, encoding) {
 };
 
 TcpSocket.prototype.destroy = function() {
-  this._destroyed = true;
-  this._debug('destroying');
-  this._subscription.remove();
+  if (!this._destroyed) {
+    this._destroyed = true;
+    this._debug('destroying');
+    this._subscription.remove();
 
-  Sockets.destroy(this._id);
+    Sockets.destroy(this._id, this._debug.bind(this, 'closed'));
+  }
 };
 
 TcpSocket.prototype._onEvent = function(info) {
@@ -239,8 +245,8 @@ TcpSocket.prototype.write = function(buffer, encoding, callback) {
   callback = callback || noop;
   var str;
   if (typeof buffer === 'string') {
-    console.warn('socket.WRITE(): interpreting as UTF8');
-    str = buffer;
+    console.warn('socket.WRITE(): encoding as base64');
+    str = Base64Str.encode(buffer);
   } else if (typeof Buffer !== 'undefined' && global.Buffer.isBuffer(buffer)) {
     encoded = true;
     str = buffer.toString('base64');
@@ -252,9 +258,14 @@ TcpSocket.prototype.write = function(buffer, encoding, callback) {
   }
 
   Sockets.write(this._id, str, encoded, function(err) {
+    if (self._timeout) {
+      clearTimeout(self._timeout);
+      self._timeout = null;
+    }
+
     err = normalizeError(err);
     if (err) {
-      self._debug('send failed', err);
+      self._debug('write failed', err);
       return callback(err);
     }
 

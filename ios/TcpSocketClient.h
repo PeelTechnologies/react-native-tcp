@@ -38,9 +38,7 @@ typedef enum RCTTCPError RCTTCPError;
 
 @interface TcpSocketClient : NSObject
 
-@property (nonatomic, retain) NSString * id;
-@property (nonatomic, retain) NSString * host;
-@property (nonatomic) u_int16_t port;
+@property (nonatomic, retain) NSNumber * id;
 
 ///---------------------------------------------------------------------------------------
 /// @name Class Methods
@@ -53,7 +51,7 @@ typedef enum RCTTCPError RCTTCPError;
  * @return New RCTTCPClient
  */
 
-+ (id)socketClientWithConfig:(id<SocketClientDelegate>) delegate;
++ (id)socketClientWithId:(NSNumber *)clientID andConfig:(id<SocketClientDelegate>) delegate;
 
 ///---------------------------------------------------------------------------------------
 /// @name Instance Methods
