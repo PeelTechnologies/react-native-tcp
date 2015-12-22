@@ -18,13 +18,13 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 {
 @private
     GCDAsyncSocket *_tcpSocket;
-    id<SocketClientDelegate> _clientDelegate;
     NSMutableDictionary<NSNumber *, RCTResponseSenderBlock> *_pendingSends;
     NSLock *_lock;
     long _sendTag;
 }
 
-- (id)initWithClientId:(NSNumber *)clientID andConfig:(id<SocketClientDelegate>) aDelegate;
+- (id)initWithClientId:(NSNumber *)clientID andConfig:(id<SocketClientDelegate>)aDelegate;
+- (id)initWithClientId:(NSNumber *)clientID andConfig:(id<SocketClientDelegate>)aDelegate andSocket:(GCDAsyncSocket*)tcpSocket;
 
 @end
 
@@ -32,10 +32,15 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
 + (id)socketClientWithId:(nonnull NSNumber *)clientID andConfig:(id<SocketClientDelegate>)delegate
 {
-    return [[[self class] alloc] initWithClientId:clientID andConfig:delegate];
+    return [[[self class] alloc] initWithClientId:clientID andConfig:delegate andSocket:nil];
 }
 
-- (id)initWithClientId:(NSNumber *)clientID andConfig:(id<SocketClientDelegate>) aDelegate
+- (id)initWithClientId:(NSNumber *)clientID andConfig:(id<SocketClientDelegate>)aDelegate
+{
+    return [self initWithClientId:clientID andConfig:aDelegate andSocket:nil];
+}
+
+- (id)initWithClientId:(NSNumber *)clientID andConfig:(id<SocketClientDelegate>)aDelegate andSocket:(GCDAsyncSocket*)tcpSocket;
 {
     self = [super init];
     if (self) {
@@ -43,6 +48,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         _clientDelegate = aDelegate;
         _pendingSends = [NSMutableDictionary dictionary];
         _lock = [[NSLock alloc] init];
+        _tcpSocket = tcpSocket;
     }
 
     return self;
@@ -77,6 +83,27 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
                               viaInterface:[interface componentsJoinedByString:@":"]
                                withTimeout:-1
                                      error:error];
+    }
+
+    return result;
+}
+
+- (BOOL)listen:(NSString *)host port:(int)port error:(NSError **)error
+{
+    if (_tcpSocket) {
+        if (error) {
+            *error = [self badInvocationError:@"this client's socket is already connected"];
+        }
+
+        return false;
+    }
+
+    _tcpSocket = [[GCDAsyncSocket alloc] initWithDelegate:self delegateQueue:[self methodQueue]];
+
+    BOOL result = [_tcpSocket acceptOnInterface:host port:port error:error];
+    if (result == YES) {
+        [_clientDelegate onConnect: self];
+        [_tcpSocket readDataWithTimeout:-1 tag:_id.longValue];
     }
 
     return result;
@@ -130,12 +157,12 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 {
     [_tcpSocket writeData:data withTimeout:-1 tag:_sendTag];
     if (callback) {
-        [self setPendingSend:callback forKey:[NSNumber numberWithLong:_sendTag]];
+        [self setPendingSend:callback forKey:@(_sendTag)];
     }
 
     _sendTag++;
 
-    [_tcpSocket readDataWithTimeout:-1 tag:-1];
+    [_tcpSocket readDataWithTimeout:-1 tag:_id.longValue];
 }
 
 - (void)end
@@ -150,9 +177,19 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
 - (void)socket:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag {
     if (!_clientDelegate) return;
-    [_clientDelegate onData:self data:data];
+    [_clientDelegate onData:@(tag) data:data];
 
-    [sock readDataWithTimeout:-1 tag:-1];
+    [sock readDataWithTimeout:-1 tag:tag];
+}
+
+- (void)socket:(GCDAsyncSocket *)sock didAcceptNewSocket:(GCDAsyncSocket *)newSocket
+{
+    TcpSocketClient *inComing = [[TcpSocketClient alloc] initWithClientId:[_clientDelegate generateRandomId]
+                                                                andConfig:_clientDelegate
+                                                                andSocket:newSocket];
+    [_clientDelegate onConnection: inComing
+                         toClient: _id];
+    [newSocket readDataWithTimeout:-1 tag:inComing.id.longValue];
 }
 
 - (void)socket:(GCDAsyncSocket *)sock didConnectToHost:(NSString *)host port:(uint16_t)port
@@ -160,11 +197,13 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     if (!_clientDelegate) return;
     [_clientDelegate onConnect:self];
 
-    [sock readDataWithTimeout:-1 tag:-1];
+    [sock readDataWithTimeout:-1 tag:_id.longValue];
 }
 
 - (void)socketDidCloseReadStream:(GCDAsyncSocket *)sock
 {
+    // TODO : investigate for half-closed sockets
+    /* no-op */
 }
 
 - (void)socketDidDisconnect:(GCDAsyncSocket *)sock withError:(NSError *)err

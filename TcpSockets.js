@@ -6,7 +6,13 @@
 
 var ipRegex = require('ip-regex');
 
-exports.Socket = require('./TcpSocket');
+var Socket = require('./TcpSocket').Socket;
+var Server = require('./TcpSocket').Server;
+
+exports.createServer = function(options, connectionListener) {
+  return new Server(options, connectionListener);
+};
+
 
 // Target API:
 //
@@ -20,38 +26,38 @@ exports.Socket = require('./TcpSocket');
 // connect(port, [host], [cb])
 // connect(path, [cb]);
 //
-exports.connect = exports.createConnection = function() {
-  var args = normalizeConnectArgs(arguments);
-  exports.Socket._debug('createConnection', args);
-  var s = new exports.Socket(args[0]);
-  return exports.Socket.prototype.connect.apply(s, args);
-};
+// exports.connect = exports.createConnection = function() {
+//   var args = normalizeConnectArgs(arguments);
+//   Socket._debug('createConnection', args);
+//   var s = new Socket(args[0]);
+//   return Socket.prototype.connect.apply(s, args);
+// };
+//
+// // Returns an array [options] or [options, cb]
+// // It is the same as the argument of Socket.prototype.connect().
+// function normalizeConnectArgs(args) {
+//   var options = {};
+//
+//   if (args[0] !== null && typeof args[0] === 'object') {
+//     // connect(options, [cb])
+//     options = args[0];
+//   }/* else if (isPipeName(args[0])) {
+//     // connect(path, [cb]);
+//     options.path = args[0];
+//   }*/ else {
+//     // connect(port, [host], [cb])
+//     options.port = args[0];
+//     if (typeof args[1] === 'string') {
+//       options.host = args[1];
+//     }
+//   }
+//
+//   var cb = args[args.length - 1];
+//   return typeof cb === 'function' ? [options, cb] : [options];
+// }
 
-// Returns an array [options] or [options, cb]
-// It is the same as the argument of Socket.prototype.connect().
-function normalizeConnectArgs(args) {
-  var options = {};
-
-  if (args[0] !== null && typeof args[0] === 'object') {
-    // connect(options, [cb])
-    options = args[0];
-  }/* else if (isPipeName(args[0])) {
-    // connect(path, [cb]);
-    options.path = args[0];
-  }*/ else {
-    // connect(port, [host], [cb])
-    options.port = args[0];
-    if (typeof args[1] === 'string') {
-      options.host = args[1];
-    }
-  }
-
-  var cb = args[args.length - 1];
-  return typeof cb === 'function' ? [options, cb] : [options];
-}
-
-exports.createConnection = function(options: { port: number,host: ?string, localAddress: ?string, localPort: ?number, family: ?number }, callback : ?any) : exports.Socket {
-  var tcpSocket = new exports.Socket();
+exports.connect = exports.createConnection = function(options: { port: number, host: ?string, localAddress: ?string, localPort: ?number, family: ?number }, callback : ?any) : Socket {
+  var tcpSocket = new Socket();
   tcpSocket.connect(options, callback);
   return tcpSocket;
 };
@@ -73,3 +79,6 @@ exports.isIPv4 = function(input: string) : boolean {
 exports.isIPv6 = function(input: string) : boolean {
   return exports.isIP(input) === 6;
 };
+
+exports.Socket = Socket;
+exports.Server = Server;

@@ -13,57 +13,53 @@ global.Buffer = global.Buffer || require('buffer').Buffer;
 var net = require('net');
 
 function randomPort() {
-  return Math.random() * 60536 | 0 + 5000 // 60536-65536
+  return Math.random() * 60536 | 0 + 5000; // 60536-65536
 }
 
-var a = net.createConnection({ port: randomPort() }, function(err) {
-  if (err) throw err
+var aPort = randomPort();
 
-  console.log('connected');
+var a = net.createServer({}, function(socket) {
+  console.log('server connected');
+
+  // socket.on('data', function (data) {
+  //   var str = String.fromCharCode.apply(null, new Uint8Array(data));
+  //   console.log('a received', str);
+  //   a.close();
+  //   b.end();
+  // });
+
+  socket.on('data', function (data) {
+    console.log('Server Received: ' + data);
+    socket.write('Echo server\r\n');
+  });
+
+  socket.on('error', function(error) {
+    console.log('error ' + error);
+  });
+}).listen({ port: aPort });
+
+// a.on('listening', function() {
+//   console.log('listening');
+// });
+//
+// a.on('error', function(error) {
+//   console.log('error ' + error);
+// });
+
+var b = net.createConnection({ port: aPort }, function(err) {
+  if (err) {
+    throw err;
+  }
+
+  console.log('client connected');
+  b.write('Hello, server! Love, Client.');
 });
 
-a.on('error', function(err) {
-  console.log(err);
+b.on('data', function(data) {
+	console.log('Client Received: ' + data);
+  b.end(); // kill client after server's response
+  a.close();
 });
-
-var b = net.createConnection({ port: randomPort() }, function(err) {
-  if (err) throw err
-
-  console.log('connected');
-});
-
-b.on('error', function(err) {
-  console.log(err);
-});
-
-
-// a.on('message', function(data, rinfo) {
-//   var str = String.fromCharCode.apply(null, new Uint8Array(data));
-//   console.log('a received', str, rinfo)
-//   a.close()
-//   b.close()
-// })
-// 
-// b.on('message', function(data, rinfo) {
-//   var str = String.fromCharCode.apply(null, new Uint8Array(data));
-//   console.log('b received', str, rinfo)
-// 
-//   // echo back
-//   b.send(data, 0, data.length, aPort, '127.0.0.1', function(err) {
-//     if (err) throw err
-// 
-//     console.log('sent')
-//   })
-// })
-// 
-// b.once('listening', function() {
-//   var msg = toByteArray('hello')
-//   a.send(msg, 0, msg.length, bPort, '127.0.0.1', function(err) {
-//     if (err) throw err
-// 
-//     console.log('sent')
-//   })
-// })
 
 var rctsockets = React.createClass({
   render: function() {
@@ -96,14 +92,14 @@ var styles = StyleSheet.create({
   },
 });
 
-// // only works for 8-bit chars
-// function toByteArray(obj) {
-//   var uint = new Uint8Array(obj.length);
-//   for (var i = 0, l = obj.length; i < l; i++){
-//     uint[i] = obj.charCodeAt(i);
-//   }
-//
-//   return new Uint8Array(uint);
-// }
+// only works for 8-bit chars
+function toByteArray(obj) {
+  var uint = new Uint8Array(obj.length);
+  for (var i = 0, l = obj.length; i < l; i++){
+    uint[i] = obj.charCodeAt(i);
+  }
+
+  return new Uint8Array(uint);
+}
 
 AppRegistry.registerComponent('rctsockets', () => rctsockets);

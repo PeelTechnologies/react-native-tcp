@@ -11,8 +11,12 @@
   "dependencies": {
     "buffer": "^3.5.3",
     "events": "^1.1.0",
-    "react-native": "^0.15.0",
+    "react-native": "^0.17.0",
     "react-native-tcp": "../../",
     "util": "^0.10.3"
+  },
+  "devDependencies": {
+    "babel-eslint": "^4.1.6",
+    "eslint-plugin-react": "^3.11.3"
   }
 }

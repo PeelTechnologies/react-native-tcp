@@ -23,20 +23,36 @@ var Sockets = NativeModules.TcpSockets;
 var base64 = require('base64-js');
 var Base64Str = require('./base64-str');
 var noop = function () {};
-var instances = 0;
+var usedIds = [];
 var STATE = {
   DISCONNECTED: 0,
   CONNECTING: 1,
   CONNECTED: 2
 };
 
-module.exports = TcpSocket;
+exports.Socket = TcpSocket;
 
 function TcpSocket(options) {
   EventEmitter.call(this);
 
-  this._id = instances++;
-  this._state = STATE.DISCONNECTED;
+  options = options || {};
+
+  var nativeSocket = false;
+  if (!options._id) {
+    // javascript generated sockets range from 1-1000
+    this._id = Math.floor((Math.random() * 1000) + 1);
+    while (usedIds.indexOf(this._id) !== -1) {
+      this._id = Math.floor((Math.random() * 1000) + 1);
+    }
+  } else {
+    // native generated sockets range from 5000-6000
+    // e.g. incoming server connections
+    this._id = options._id;
+    nativeSocket = true;
+  }
+  usedIds.push(this._id);
+
+  this._state = nativeSocket ? STATE.CONNECTED : STATE.DISCONNECTED;
   this._connecting = false;
   this._hadError = false;
   this._host = null;
@@ -63,7 +79,9 @@ function TcpSocket(options) {
     this.on = this.addListener.bind(this);
   }
 
-  Sockets.createSocket(this._id); // later
+  if (nativeSocket === false) {
+    Sockets.createSocket(this._id);
+  }
 }
 
 inherits(TcpSocket, EventEmitter);
@@ -82,7 +100,7 @@ TcpSocket.prototype.connect = function(options, callback) {
   }
 
   if (typeof callback === 'function') {
-    this.once('connected', callback);
+    this.once('connect', callback);
   }
 
   var host = options.host || 'localhost';
@@ -282,3 +300,75 @@ function normalizeError (err) {
     return err;
   }
 }
+
+exports.Server = TcpServer;
+
+function TcpServer(options, connectionListener) {
+  if (!(this instanceof TcpServer)) {
+    return new TcpServer(options, connectionListener);
+  }
+
+  EventEmitter.call(this);
+
+  var self = this;
+
+  this._socket = new exports.Socket(options);
+  this._socket.on('connect', function() {
+    self.emit('listening');
+  });
+  this._socket.on('error', function(error) {
+    self.emit('error', error);
+    self._socket.destroy();
+  });
+  this._socket.on('close', function() {
+    self.emit('close');
+  });
+  this._socket.on('connection', function(socketId) {
+    var socket = new exports.Socket({_id : socketId });
+    self.emit('connection', socket);
+  });
+
+  if (typeof options === 'function') {
+    connectionListener = options;
+    options = {};
+    self.on('connection', connectionListener);
+  } else {
+    options = options || {};
+
+    if (typeof connectionListener === 'function') {
+      self.on('connection', connectionListener);
+    }
+  }
+
+  // this._connections = 0;
+
+  // this.allowHalfOpen = options.allowHalfOpen || false;
+  // this.pauseOnConnect = !!options.pauseOnConnect;
+}
+
+inherits(TcpServer, EventEmitter);
+
+TcpServer.prototype.listen = function(options, callback) {
+  var port = Number(options.port);
+  var hostname = options.hostname || 'localhost';
+
+  if (callback) {
+    this.on('listening', callback);
+  }
+
+  Sockets.listen(this._socket._id, hostname, port);
+
+  return this;
+};
+
+TcpServer.prototype.getConnections = function(callback) {
+  /* nop */
+};
+
+TcpServer.prototype.close = function(callback) {
+  if (callback) {
+    this.on('close', callback);
+  }
+
+  this._socket.end();
+};
