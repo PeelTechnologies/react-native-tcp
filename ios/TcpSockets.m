@@ -64,7 +64,6 @@ RCT_EXPORT_METHOD(connect:(nonnull NSNumber*)cId
 
 RCT_EXPORT_METHOD(write:(nonnull NSNumber*)cId
                   string:(NSString *)base64String
-                  encoded:(BOOL)encoded
                   callback:(RCTResponseSenderBlock)callback) {
     TcpSocketClient* client = [self findClient:cId callback:callback];
     if (!client) return;

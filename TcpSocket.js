@@ -144,34 +144,6 @@ TcpSocket.prototype.setTimeout = function(msecs: number, callback: () => void) {
   }
 };
 
-TcpSocket.prototype.setNoDelay = function(noDelay) {
-  // nothing yet
-};
-
-TcpSocket.prototype.setEncoding = function(encoding) {
-  // nothing yet
-};
-
-TcpSocket.prototype.setKeepAlive = function(enable, initialDelay) {
-  // nothing yet
-};
-
-TcpSocket.prototype.pause = function() {
-  // nothing yet
-};
-
-TcpSocket.prototype.resume = function() {
-  // nothing yet
-};
-
-TcpSocket.prototype.ref = function() {
-  // nothing yet
-};
-
-TcpSocket.prototype.unref = function() {
-  // nothing yet
-};
-
 TcpSocket.prototype.address = function() : { port: number, address: string, family: string } {
   return { port: this._port,
            address: this._address,
@@ -231,9 +203,8 @@ TcpSocket.prototype._onEvent = function(info: { event: string, data: any }) {
   this.emit(info.event, info.data);
 };
 
-TcpSocket.prototype.write = function(buffer, encoding, callback) {
+TcpSocket.prototype.write = function(buffer: any, callback: ?(err: ?Error) => void) : boolean {
   var self = this;
-  var encoded = false;
 
   if (this._state === STATE.DISCONNECTED) {
     throw new Error('Socket is not connected.');
@@ -241,26 +212,20 @@ TcpSocket.prototype.write = function(buffer, encoding, callback) {
     // we're ok, GCDAsyncSocket handles queueing internally
   }
 
-  if (typeof encoding  === 'function') {
-    callback = encoding;
-    encoding = null;
-  }
-  callback = callback || noop;
+  var cb = callback || noop;
   var str;
   if (typeof buffer === 'string') {
-    console.warn('socket.WRITE(): encoding as base64');
+    self._debug('socket.WRITE(): encoding as base64');
     str = Base64Str.encode(buffer);
   } else if (typeof Buffer !== 'undefined' && global.Buffer.isBuffer(buffer)) {
-    encoded = true;
     str = buffer.toString('base64');
   } else if (buffer instanceof Uint8Array || Array.isArray(buffer)) {
-    encoded = true;
     str = base64.fromByteArray(buffer);
   } else {
     throw new Error('invalid message format');
   }
 
-  Sockets.write(this._id, str, encoded, function(err) {
+  Sockets.write(this._id, str, function(err) {
     if (self._timeout) {
       clearTimeout(self._timeout);
       self._timeout = null;
@@ -269,11 +234,13 @@ TcpSocket.prototype.write = function(buffer, encoding, callback) {
     err = normalizeError(err);
     if (err) {
       self._debug('write failed', err);
-      return callback(err);
+      return cb(err);
     }
 
-    callback();
+    cb();
   });
+
+  return true;
 };
 
 function normalizeError(err) {
