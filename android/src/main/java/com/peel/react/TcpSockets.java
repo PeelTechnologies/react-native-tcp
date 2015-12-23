@@ -1,8 +1,6 @@
 /**
- *  TcpSockets.java
- *  react-native-tcp
- *
- *  Created by Andy Prock on 12/21/15.
+ * Copyright (c) 2015-present, Peel Technologies, Inc.
+ * All rights reserved.
  */
 
 package com.peel.react;
@@ -80,53 +78,72 @@ public final class TcpSockets extends ReactContextBaseJavaModule {
 
     @ReactMethod
     public void connect(final Integer cId, final @Nullable String host, final Integer port, final ReadableMap options) {
-      new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
-          @Override
-          protected void doInBackgroundGuarded(Void... params) {
-              FLog.e(TAG, "TcpSockets.connect unimplemented.");
+        new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
+            @Override
+            protected void doInBackgroundGuarded(Void... params) {
+                FLog.e(TAG, "TcpSockets.connect unimplemented.");
 
-              WritableMap eventParams = Arguments.createMap();
-              eventParams.putString("event", "error");
-              eventParams.putString("data", "TcpSockets.connect unimplemented");
+                WritableMap eventParams = Arguments.createMap();
+                eventParams.putString("event", "error");
+                eventParams.putString("data", "TcpSockets.connect unimplemented");
 
-              ReactContext reactContext = TcpSockets.this.getReactApplicationContext();
-              reactContext
-                      .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                      .emit("tcp-" + cId + "-event", eventParams);
-          }
-      }.execute();
+                ReactContext reactContext = TcpSockets.this.getReactApplicationContext();
+                reactContext
+                        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit("tcp-" + cId + "-event", eventParams);
+            }
+        }.execute();
     }
 
     @ReactMethod
     public void write(final Integer cId, final String base64String, final boolean encoded, final Callback callback) {
-      new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
-          @Override
-          protected void doInBackgroundGuarded(Void... params) {
-              FLog.e(TAG, "TcpSockets.write unimplemented.");
-              callback.invoke("unimplemented." + cId);
-          }
-      }.execute();
+        new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
+            @Override
+            protected void doInBackgroundGuarded(Void... params) {
+                FLog.e(TAG, "TcpSockets.write unimplemented.");
+                callback.invoke("unimplemented." + cId);
+            }
+        }.execute();
     }
 
     @ReactMethod
     public void end(final Integer cId, final Callback callback) {
-      new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
-          @Override
-          protected void doInBackgroundGuarded(Void... params) {
-              FLog.e(TAG, "TcpSockets.end unimplemented.");
-              callback.invoke("unimplemented." + cId);
-          }
-      }.execute();
+        new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
+            @Override
+            protected void doInBackgroundGuarded(Void... params) {
+                FLog.e(TAG, "TcpSockets.end unimplemented.");
+                callback.invoke("unimplemented." + cId);
+            }
+        }.execute();
     }
 
     @ReactMethod
     public void destroy(final Integer cId, final Callback callback) {
-      new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
-          @Override
-          protected void doInBackgroundGuarded(Void... params) {
-              FLog.e(TAG, "TcpSockets.destroy unimplemented.");
-              callback.invoke("unimplemented." + cId);
-          }
-      }.execute();
+        new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
+            @Override
+            protected void doInBackgroundGuarded(Void... params) {
+                FLog.e(TAG, "TcpSockets.destroy unimplemented.");
+                callback.invoke("unimplemented." + cId);
+            }
+        }.execute();
+    }
+
+    @ReactMethod
+    public void listen(final Integer cId, final String host, final Integer port) {
+        new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
+            @Override
+            protected void doInBackgroundGuarded(Void... params) {
+                FLog.e(TAG, "TcpSockets.listen unimplemented.");
+
+                WritableMap eventParams = Arguments.createMap();
+                eventParams.putString("event", "error");
+                eventParams.putString("data", "TcpSockets.connect unimplemented");
+
+                ReactContext reactContext = TcpSockets.this.getReactApplicationContext();
+                reactContext
+                        .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+                        .emit("tcp-" + cId + "-event", eventParams);
+            }
+        }.execute();
     }
 }

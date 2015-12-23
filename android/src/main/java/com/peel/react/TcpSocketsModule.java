@@ -1,8 +1,6 @@
 /**
- *  TcpSocketsModule.java
- *  react-native-tcp
- *
- *  Created by Andy Prock on 12/21/15.
+ * Copyright (c) 2015-present, Peel Technologies, Inc.
+ * All rights reserved.
  */
 
 package com.peel.react;

@@ -1,7 +1,7 @@
 {
   "name": "react-native-tcp",
   "version": "0.0.2",
-  "description": "node's dgram API for react-native",
+  "description": "node's net API for react-native",
   "main": "TcpSockets.js",
   "scripts": {
     "start": "exit 1"
@@ -27,7 +27,8 @@
     "name": "Andy Prock",
     "email": "aprock@gmail.com"
   },
-  "license": "MIT",
+  "license": "UNLICENSED",
+  "private": true,
   "bugs": {
     "url": "https://github.com/PeelTechnologies/react-native-tcp/issues"
   },

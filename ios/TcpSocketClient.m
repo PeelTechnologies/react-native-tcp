@@ -1,10 +1,7 @@
-//
-//  TcpSocketClient.m
-//  react-native-tcp
-//
-//  Created by Andy Prock on 12/14/15.
-//  Copyright (c) 2015 peel, Inc. All rights reserved.
-//
+/**
+ * Copyright (c) 2015-present, Peel Technologies, Inc.
+ * All rights reserved.
+ */
 
 #import <netinet/in.h>
 #import <arpa/inet.h>

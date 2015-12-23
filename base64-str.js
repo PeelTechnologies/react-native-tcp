@@ -1,5 +1,8 @@
 /**
- *  Source: https://gist.github.com/ncerminara/11257943
+ * @providesModule base64-js
+ * @noflow
+ *
+ * Original Source: https://gist.github.com/ncerminara/11257943
  */
 'use strict';
 

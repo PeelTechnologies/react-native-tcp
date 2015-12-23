@@ -1,11 +1,7 @@
-//
-//  react-native-tcp
-//
-//  Created by Andy Prock on 12/14/15.
-//  Copyright (c) 2015 Peel, Inc. All rights reserved.
-//
-
 /**
+ * Copyright (c) 2015-present, Peel Technologies, Inc.
+ * All rights reserved.
+ *
  * @providesModule TcpSocket
  * @flow
  */
@@ -30,9 +26,8 @@ var STATE = {
   CONNECTED: 2
 };
 
-exports.Socket = TcpSocket;
-
-function TcpSocket(options) {
+function TcpSocket(options: ?any) {
+  // $FlowFixMe: suppressing this error flow doesn't like EventEmitter
   EventEmitter.call(this);
 
   options = options || {};
@@ -53,19 +48,7 @@ function TcpSocket(options) {
   usedIds.push(this._id);
 
   this._state = nativeSocket ? STATE.CONNECTED : STATE.DISCONNECTED;
-  this._connecting = false;
-  this._hadError = false;
   this._host = null;
-
-  if (typeof options === 'number') {
-    options = { fd: options };
-  } else if (options === undefined) {
-    options = {};
-  }
-
-  if (options.fd) {
-    throw new Error('file descriptors are unsupoprted at this time.');
-  }
 
   // these will be set once there is a connection
   this.readable = this.writable = false;
@@ -94,7 +77,7 @@ TcpSocket.prototype._debug = function() {
   }
 };
 
-TcpSocket.prototype.connect = function(options, callback) {
+TcpSocket.prototype.connect = function(options: { port: number, host: ?string, localAddress: ?string, localPort: ?number, family: ?number }, callback: ?() => void) {
   if (this._state !== STATE.DISCONNECTED) {
     throw new Error('Socket is already bound');
   }
@@ -127,7 +110,6 @@ TcpSocket.prototype.connect = function(options, callback) {
   port |= port;
 
   this._state = STATE.CONNECTING;
-  this._connecting = true;
   this._debug('connecting, host:', host, 'port:', port);
 
   Sockets.connect(this._id, host, Number(port), options);
@@ -135,14 +117,14 @@ TcpSocket.prototype.connect = function(options, callback) {
 
 // Check that the port number is not NaN when coerced to a number,
 // is an integer and that it falls within the legal range of port numbers.
-function isLegalPort(port) {
+function isLegalPort(port: number) : boolean {
   if (typeof port === 'string' && port.trim() === '') {
     return false;
   }
   return +port === (port >>> 0) && port >= 0 && port <= 0xFFFF;
 }
 
-TcpSocket.prototype.setTimeout = function(msecs, callback) {
+TcpSocket.prototype.setTimeout = function(msecs: number, callback: () => void) {
   var self = this;
 
   if (this._timeout) {
@@ -156,11 +138,11 @@ TcpSocket.prototype.setTimeout = function(msecs, callback) {
     }
 
     var self = this;
-    this._timeout = setTimeout(msecs, function() {
+    this._timeout = setTimeout(function() {
       self.emit('timeout');
       self._timeout = null;
       self.destroy();
-    });
+    }, msecs);
   }
 };
 
@@ -222,13 +204,12 @@ TcpSocket.prototype.destroy = function() {
   }
 };
 
-TcpSocket.prototype._onEvent = function(info) {
+TcpSocket.prototype._onEvent = function(info: { event: string, data: ?any }) {
   this._debug('received', info.event);
 
   if (info.event === 'connect') {
     this.writable = this.readable = true;
     this._state = STATE.CONNECTED;
-    this._connecting = false;
   } else if (info.event === 'data') {
     if (this._timeout) {
       clearTimeout(this._timeout);
@@ -291,7 +272,7 @@ TcpSocket.prototype.write = function(buffer, encoding, callback) {
   });
 };
 
-function normalizeError (err) {
+function normalizeError(err) {
   if (err) {
     if (typeof err === 'string') {
       err = new Error(err);
@@ -301,74 +282,4 @@ function normalizeError (err) {
   }
 }
 
-exports.Server = TcpServer;
-
-function TcpServer(options, connectionListener) {
-  if (!(this instanceof TcpServer)) {
-    return new TcpServer(options, connectionListener);
-  }
-
-  EventEmitter.call(this);
-
-  var self = this;
-
-  this._socket = new exports.Socket(options);
-  this._socket.on('connect', function() {
-    self.emit('listening');
-  });
-  this._socket.on('error', function(error) {
-    self.emit('error', error);
-    self._socket.destroy();
-  });
-  this._socket.on('close', function() {
-    self.emit('close');
-  });
-  this._socket.on('connection', function(socketId) {
-    var socket = new exports.Socket({_id : socketId });
-    self.emit('connection', socket);
-  });
-
-  if (typeof options === 'function') {
-    connectionListener = options;
-    options = {};
-    self.on('connection', connectionListener);
-  } else {
-    options = options || {};
-
-    if (typeof connectionListener === 'function') {
-      self.on('connection', connectionListener);
-    }
-  }
-
-  // this._connections = 0;
-
-  // this.allowHalfOpen = options.allowHalfOpen || false;
-  // this.pauseOnConnect = !!options.pauseOnConnect;
-}
-
-inherits(TcpServer, EventEmitter);
-
-TcpServer.prototype.listen = function(options, callback) {
-  var port = Number(options.port);
-  var hostname = options.hostname || 'localhost';
-
-  if (callback) {
-    this.on('listening', callback);
-  }
-
-  Sockets.listen(this._socket._id, hostname, port);
-
-  return this;
-};
-
-TcpServer.prototype.getConnections = function(callback) {
-  /* nop */
-};
-
-TcpServer.prototype.close = function(callback) {
-  if (callback) {
-    this.on('close', callback);
-  }
-
-  this._socket.end();
-};
+module.exports = TcpSocket;

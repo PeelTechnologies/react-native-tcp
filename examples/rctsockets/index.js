@@ -1,3 +1,8 @@
+/**
+ * Copyright (c) 2015-present, Peel Technologies, Inc.
+ * All rights reserved.
+ */
+
 'use strict';
 
 var React = require('react-native');
@@ -21,13 +26,6 @@ var aPort = randomPort();
 var a = net.createServer({}, function(socket) {
   console.log('server connected');
 
-  // socket.on('data', function (data) {
-  //   var str = String.fromCharCode.apply(null, new Uint8Array(data));
-  //   console.log('a received', str);
-  //   a.close();
-  //   b.end();
-  // });
-
   socket.on('data', function (data) {
     console.log('Server Received: ' + data);
     socket.write('Echo server\r\n');
@@ -37,14 +35,6 @@ var a = net.createServer({}, function(socket) {
     console.log('error ' + error);
   });
 }).listen({ port: aPort });
-
-// a.on('listening', function() {
-//   console.log('listening');
-// });
-//
-// a.on('error', function(error) {
-//   console.log('error ' + error);
-// });
 
 var b = net.createConnection({ port: aPort }, function(err) {
   if (err) {
