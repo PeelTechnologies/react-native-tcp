@@ -67,6 +67,8 @@ typedef enum RCTTCPError RCTTCPError;
 
 - (BOOL)listen:(NSString *)host port:(int)port error:(NSError **)error;
 
+- (NSDictionary<NSString *, NSString *> *)getAddress;
+
 /**
  * write data
  *

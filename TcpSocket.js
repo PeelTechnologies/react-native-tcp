@@ -26,29 +26,26 @@ var STATE = {
   CONNECTED: 2
 };
 
-function TcpSocket(options: ?any) {
+function TcpSocket(options: ?{ id: ?number }) {
   // $FlowFixMe: suppressing this error flow doesn't like EventEmitter
   EventEmitter.call(this);
 
-  options = options || {};
-
   var nativeSocket = false;
-  if (!options._id) {
+  if (options && options.id) {
+    // native generated sockets range from 5000-6000
+    // e.g. incoming server connections
+    this._id = Number(options.id);
+    nativeSocket = true;
+  } else {
     // javascript generated sockets range from 1-1000
     this._id = Math.floor((Math.random() * 1000) + 1);
     while (usedIds.indexOf(this._id) !== -1) {
       this._id = Math.floor((Math.random() * 1000) + 1);
     }
-  } else {
-    // native generated sockets range from 5000-6000
-    // e.g. incoming server connections
-    this._id = options._id;
-    nativeSocket = true;
   }
   usedIds.push(this._id);
 
-  this._state = nativeSocket ? STATE.CONNECTED : STATE.DISCONNECTED;
-  this._host = null;
+  this._state = STATE.CONNECTED;
 
   // these will be set once there is a connection
   this.readable = this.writable = false;
@@ -63,6 +60,7 @@ function TcpSocket(options: ?any) {
   }
 
   if (nativeSocket === false) {
+    this._state = STATE.DISCONNECTED;
     Sockets.createSocket(this._id);
   }
 }
@@ -174,8 +172,10 @@ TcpSocket.prototype.unref = function() {
   // nothing yet
 };
 
-TcpSocket.prototype.address = function() {
-  // nothing yet
+TcpSocket.prototype.address = function() : { port: number, address: string, family: string } {
+  return { port: this._port,
+           address: this._address,
+           family: this._family };
 };
 
 TcpSocket.prototype.end = function(data, encoding) {
@@ -204,12 +204,16 @@ TcpSocket.prototype.destroy = function() {
   }
 };
 
-TcpSocket.prototype._onEvent = function(info: { event: string, data: ?any }) {
+TcpSocket.prototype._onEvent = function(info: { event: string, data: any }) {
   this._debug('received', info.event);
 
   if (info.event === 'connect') {
     this.writable = this.readable = true;
     this._state = STATE.CONNECTED;
+
+    this._address = info.data.address;
+    this._port = Number(info.data.port);
+    this._family = info.data.family;
   } else if (info.event === 'data') {
     if (this._timeout) {
       clearTimeout(this._timeout);

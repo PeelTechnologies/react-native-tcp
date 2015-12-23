@@ -21,9 +21,9 @@ function randomPort() {
   return Math.random() * 60536 | 0 + 5000; // 60536-65536
 }
 
-var aPort = randomPort();
+var serverPort = randomPort();
 
-var a = net.createServer({}, function(socket) {
+var server = net.createServer(function(socket) {
   console.log('server connected');
 
   socket.on('data', function (data) {
@@ -34,21 +34,19 @@ var a = net.createServer({}, function(socket) {
   socket.on('error', function(error) {
     console.log('error ' + error);
   });
-}).listen({ port: aPort });
-
-var b = net.createConnection({ port: aPort }, function(err) {
-  if (err) {
-    throw err;
-  }
-
-  console.log('client connected');
-  b.write('Hello, server! Love, Client.');
+}).listen({ port: serverPort }, function() {
+  console.log('opened server on ' + JSON.stringify(server.address()));
 });
 
-b.on('data', function(data) {
+var client = net.createConnection({ port: serverPort }, function() {
+  console.log('opened client on ' + JSON.stringify(client.address()));
+  client.write('Hello, server! Love, Client.');
+});
+
+client.on('data', function(data) {
 	console.log('Client Received: ' + data);
-  b.end(); // kill client after server's response
-  a.close();
+  client.destroy(); // kill client after server's response
+  server.close();
 });
 
 var rctsockets = React.createClass({

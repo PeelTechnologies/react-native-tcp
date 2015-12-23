@@ -45,11 +45,11 @@ function TcpServer(connectionListener: (socket: Socket)  => void) {
   this._socket.on('connection', function(socketId) {
     self._connections++;
 
-    var socket = new Socket({ _id: socketId });
+    var socket = new Socket({ id: socketId });
     self.emit('connection', socket);
   });
 
-  if (connectionListener === typeof 'function') {
+  if (typeof connectionListener === 'function') {
     self.on('connection', connectionListener);
   }
 
@@ -66,7 +66,7 @@ TcpServer.prototype._debug = function() {
 };
 
 TcpServer.prototype.listen = function(options: { port: number, hostname: ?string }, callback: ?() => void) : TcpServer {
-  var port = Number(options.port);
+  var port = options.port;
   var hostname = options.hostname || 'localhost';
 
   if (callback) {
@@ -82,6 +82,10 @@ TcpServer.prototype.getConnections = function(callback: (err: ?any, count: numbe
   if (typeof callback === 'function') {
     callback.invoke(null, this._connections);
   }
+};
+
+TcpServer.prototype.address = function() : { port: number, address: string, family: string } {
+  return this._socket.address();
 };
 
 TcpServer.prototype.close = function(callback: ?() => void) {

@@ -85,6 +85,26 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     return result;
 }
 
+- (NSDictionary<NSString *, NSString *> *)getAddress
+{
+    if (_tcpSocket)
+    {
+        if (_tcpSocket.isConnected) {
+            return @{ @"port": @(_tcpSocket.connectedPort).stringValue,
+                      @"address": _tcpSocket.connectedHost ?: @"unknown",
+                      @"family": _tcpSocket.isIPv6?@"IPv6":@"IPv4" };
+        } else {
+            return @{ @"port": @(_tcpSocket.localPort).stringValue,
+                      @"address": _tcpSocket.localHost ?: @"unknown",
+                      @"family": _tcpSocket.isIPv6?@"IPv6":@"IPv4" };
+        }
+    }
+
+    return @{ @"port": @"0",
+              @"address": @"unknown",
+              @"family": @"unkown" };
+}
+
 - (BOOL)listen:(NSString *)host port:(int)port error:(NSError **)error
 {
     if (_tcpSocket) {
