@@ -5,8 +5,6 @@
 
 package com.peel.react;
 
-import android.content.Context;
-import android.net.wifi.WifiManager;
 import android.support.annotation.Nullable;
 import android.util.SparseArray;
 
@@ -22,17 +20,13 @@ import com.facebook.react.bridge.ReadableMap;
 import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
-import java.io.IOException;
-import java.net.SocketException;
-import java.net.UnknownHostException;
-import java.util.concurrent.ExecutionException;
-
 /**
  * The NativeModule in charge of storing active {@link TcpSocketClient}s, and acting as an api layer.
  */
 public final class TcpSockets extends ReactContextBaseJavaModule {
     private static final String TAG = "TcpSockets";
 
+    private SparseArray<TcpSocketClient> mClients = new SparseArray<TcpSocketClient>();
     private boolean mShuttingDown = false;
 
     public TcpSockets(ReactApplicationContext reactContext) {

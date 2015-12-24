@@ -50,9 +50,7 @@ function TcpSocket(options: ?{ id: ?number }) {
   // these will be set once there is a connection
   this.readable = this.writable = false;
 
-  this._subscription = DeviceEventEmitter.addListener(
-    'tcp-' + this._id + '-event', this._onEvent.bind(this)
-  );
+  this._registerEvents();
 
   // ensure compatibility with node's EventEmitter
   if (!this.on) {
@@ -75,7 +73,7 @@ TcpSocket.prototype._debug = function() {
   }
 };
 
-TcpSocket.prototype.connect = function(options: { port: number, host: ?string, localAddress: ?string, localPort: ?number, family: ?number }, callback: ?() => void) {
+TcpSocket.prototype.connect = function(options: ?{ port: ?number | ?string, host: ?string, localAddress: ?string, localPort: ?number }, callback: ?() => void) {
   if (this._state !== STATE.DISCONNECTED) {
     throw new Error('Socket is already bound');
   }
@@ -84,8 +82,17 @@ TcpSocket.prototype.connect = function(options: { port: number, host: ?string, l
     this.once('connect', callback);
   }
 
+  if (!options) {
+    options = {
+      host: 'localhost',
+      port: 0,
+      localAddress: null,
+      localPort: null
+    };
+  }
+
   var host = options.host || 'localhost';
-  var port = options.port;
+  var port = options.port || 0;
   var localAddress = options.localAddress;
   var localPort = options.localPort;
 
@@ -101,11 +108,13 @@ TcpSocket.prototype.connect = function(options: { port: number, host: ?string, l
     if (typeof port !== 'number' && typeof port !== 'string') {
       throw new TypeError('"port" option should be a number or string: ' + port);
     }
+
+    port = Number(port);
+
     if (!isLegalPort(port)) {
       throw new RangeError('"port" option should be >= 0 and < 65536: ' + port);
     }
   }
-  port |= port;
 
   this._state = STATE.CONNECTING;
   this._debug('connecting, host:', host, 'port:', port);
@@ -145,9 +154,7 @@ TcpSocket.prototype.setTimeout = function(msecs: number, callback: () => void) {
 };
 
 TcpSocket.prototype.address = function() : { port: number, address: string, family: string } {
-  return { port: this._port,
-           address: this._address,
-           family: this._family };
+  return this._address;
 };
 
 TcpSocket.prototype.end = function(data, encoding) {
@@ -161,46 +168,95 @@ TcpSocket.prototype.end = function(data, encoding) {
 
   this._destroyed = true;
   this._debug('closing');
-  this._subscription.remove();
 
-  Sockets.end(this._id, this._debug.bind(this, 'closed'));
+  Sockets.end(this._id, this._debug.bind(this, 'end'));
 };
 
 TcpSocket.prototype.destroy = function() {
   if (!this._destroyed) {
     this._destroyed = true;
     this._debug('destroying');
-    this._subscription.remove();
 
-    Sockets.destroy(this._id, this._debug.bind(this, 'closed'));
+    Sockets.destroy(this._id, this._debug.bind(this, 'destroy'));
   }
 };
 
-TcpSocket.prototype._onEvent = function(info: { event: string, data: any }) {
-  this._debug('received', info.event);
+TcpSocket.prototype._registerEvents = function(): void {
+  this._subs = [
+    DeviceEventEmitter.addListener(
+      'tcp-' + this._id + '-connect', this._onConnect.bind(this)
+    ),
+    DeviceEventEmitter.addListener(
+      'tcp-' + this._id + '-connection', this._onConnection.bind(this)
+    ),
+    DeviceEventEmitter.addListener(
+      'tcp-' + this._id + '-data', this._onData.bind(this)
+    ),
+    DeviceEventEmitter.addListener(
+      'tcp-' + this._id + '-close', this._onClose.bind(this)
+    ),
+    DeviceEventEmitter.addListener(
+      'tcp-' + this._id + '-error', this._onError.bind(this)
+    )
+  ];
+};
 
-  if (info.event === 'connect') {
-    this.writable = this.readable = true;
-    this._state = STATE.CONNECTED;
+TcpSocket.prototype._unregisterEvents = function(): void {
+  this._subs.forEach(function(listener) {
+    listener.remove();
+  });
+  this._subs = [];
+};
 
-    this._address = info.data.address;
-    this._port = Number(info.data.port);
-    this._family = info.data.family;
-  } else if (info.event === 'data') {
-    if (this._timeout) {
-      clearTimeout(this._timeout);
-      this._timeout = null;
-    }
+TcpSocket.prototype._onConnect = function(address: { port: string, address: string, family: string }): void {
+  this._debug('received', 'connect');
 
-    // from base64 string
-    info.data = typeof Buffer === 'undefined'
-      ? base64.toByteArray(info.data)
-      : new global.Buffer(info.data, 'base64');
-  } else if (info.event === 'close') {
-    this._state = STATE.DISCONNECTED;
+  this.writable = this.readable = true;
+  this._state = STATE.CONNECTED;
+
+  this._address = address;
+  this.address.port = Number(this.address.port);
+
+  this.emit('connect');
+};
+
+TcpSocket.prototype._onConnection = function(id: number): void {
+  this._debug('received', 'connection');
+
+  var socket = new TcpSocket({ id: id });
+  this.emit('connection', socket);
+};
+
+TcpSocket.prototype._onData = function(data: string): void {
+  this._debug('received', 'data');
+
+  if (this._timeout) {
+    clearTimeout(this._timeout);
+    this._timeout = null;
   }
 
-  this.emit(info.event, info.data);
+  // from base64 string
+  var buffer = typeof Buffer === 'undefined'
+    ? base64.toByteArray(data)
+    : new global.Buffer(data, 'base64');
+
+  this.emit('data', buffer);
+};
+
+TcpSocket.prototype._onClose = function(hadError: boolean): void {
+  this._debug('received', 'close');
+
+  this._unregisterEvents();
+
+  this._state = STATE.DISCONNECTED;
+
+  this.emit('close', hadError);
+};
+
+TcpSocket.prototype._onError = function(error: string): void {
+  this._debug('received', 'error');
+
+  this.emit('error', normalizeError(error));
 };
 
 TcpSocket.prototype.write = function(buffer: any, callback: ?(err: ?Error) => void) : boolean {

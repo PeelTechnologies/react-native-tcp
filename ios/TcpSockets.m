@@ -101,15 +101,22 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
 
 - (void)onConnect:(TcpSocketClient*) client
 {
-    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-event", client.id]
-                                                    body:@{ @"event": @"connect", @"data": [client getAddress] }];
+    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-connect", client.id]
+                                                    body:[client getAddress]];
+}
+
+-(void)onConnection:(TcpSocketClient *)client toClient:(NSNumber *)clientID {
+    _clients[client.id] = client;
+
+    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-connection", clientID]
+                                                    body:client.id];
 }
 
 - (void)onData:(NSNumber *)clientID data:(NSData *)data
 {
     NSString *base64String = [data base64EncodedStringWithOptions:0];
-    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-event", clientID]
-                                                    body:@{ @"event": @"data", @"data": base64String }];
+    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-data", clientID]
+                                                    body:base64String];
 }
 
 - (void)onClose:(TcpSocketClient*) client withError:(NSError *)err
@@ -118,8 +125,8 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
       [self onError:client withError:err];
     }
 
-    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-event", client.id]
-                                                    body:@{ @"event": @"close", @"data": err == nil ? @NO : @YES }];
+    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-close", client.id]
+                                                    body:err == nil ? @NO : @YES];
 
     client.clientDelegate = nil;
     [_clients removeObjectForKey:client.id];
@@ -127,8 +134,8 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
 
 - (void)onError:(TcpSocketClient*) client withError:(NSError *)err {
     NSString *msg = [err userInfo][@"NSLocalizedFailureReason"] ?: [err userInfo][@"NSLocalizedDescription"];
-    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-event", client.id]
-                                                    body:@{ @"event": @"error", @"data": msg }];
+    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-error", client.id]
+                                                    body:msg];
 
 }
 
@@ -167,13 +174,6 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
 
     [client destroy];
     [_clients removeObjectForKey:cId];
-}
-
--(void)onConnection:(TcpSocketClient *)client toClient:(NSNumber *)clientID {
-    _clients[client.id] = client;
-
-    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-event", clientID]
-                                                    body:@{ @"event": @"connection", @"data": client.id }];
 }
 
 -(NSNumber*)generateRandomId {

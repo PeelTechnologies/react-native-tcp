@@ -17,7 +17,7 @@ exports.createServer = function(connectionListener: (socket: Socket)  => void) :
   return new Server(connectionListener);
 };
 
-exports.connect = exports.createConnection = function(options: { port: number, host: ?string, localAddress: ?string, localPort: ?number, family: ?number }, callback: ?() => void) : Socket {
+exports.connect = exports.createConnection = function(options: ?{ port: ?number | ?string, host: ?string, localAddress: ?string, localPort: ?number}, callback: ?() => void) : Socket {
   var tcpSocket = new Socket();
   tcpSocket.connect(options, callback);
   return tcpSocket;
