@@ -109,7 +109,7 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
     _clients[client.id] = client;
 
     [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-connection", clientID]
-                                                    body:client.id];
+                                                    body:@{ @"id": client.id, @"address" : [client getAddress] }];
 }
 
 - (void)onData:(NSNumber *)clientID data:(NSData *)data

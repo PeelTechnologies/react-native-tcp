@@ -30,12 +30,14 @@ function TcpSocket(options: ?{ id: ?number }) {
   // $FlowFixMe: suppressing this error flow doesn't like EventEmitter
   EventEmitter.call(this);
 
-  var nativeSocket = false;
   if (options && options.id) {
     // native generated sockets range from 5000-6000
     // e.g. incoming server connections
     this._id = Number(options.id);
-    nativeSocket = true;
+
+    if (usedIds.indexOf(this._id) !== -1) {
+      throw new Error('Socket id ' + this._id + 'already in use');
+    }
   } else {
     // javascript generated sockets range from 1-1000
     this._id = Math.floor((Math.random() * 1000) + 1);
@@ -43,9 +45,8 @@ function TcpSocket(options: ?{ id: ?number }) {
       this._id = Math.floor((Math.random() * 1000) + 1);
     }
   }
-  usedIds.push(this._id);
 
-  this._state = STATE.CONNECTED;
+  usedIds.push(this._id);
 
   // these will be set once there is a connection
   this.readable = this.writable = false;
@@ -57,10 +58,7 @@ function TcpSocket(options: ?{ id: ?number }) {
     this.on = this.addListener.bind(this);
   }
 
-  if (nativeSocket === false) {
-    this._state = STATE.DISCONNECTED;
-    Sockets.createSocket(this._id);
-  }
+  this._state = STATE.DISCONNECTED;
 }
 
 inherits(TcpSocket, EventEmitter);
@@ -119,6 +117,7 @@ TcpSocket.prototype.connect = function(options: ?{ port: ?number | ?string, host
   this._state = STATE.CONNECTING;
   this._debug('connecting, host:', host, 'port:', port);
 
+  Sockets.createSocket(this._id);
   Sockets.connect(this._id, host, Number(port), options);
 };
 
@@ -213,17 +212,22 @@ TcpSocket.prototype._onConnect = function(address: { port: string, address: stri
 
   this.writable = this.readable = true;
   this._state = STATE.CONNECTED;
-
   this._address = address;
-  this.address.port = Number(this.address.port);
+  this._address.port = Number(this._address.port);
 
   this.emit('connect');
 };
 
-TcpSocket.prototype._onConnection = function(id: number): void {
+TcpSocket.prototype._onConnection = function(info: { id: number, address: { port: string, address: string, family: string } }): void {
   this._debug('received', 'connection');
 
-  var socket = new TcpSocket({ id: id });
+  var socket = new TcpSocket({ id: info.id });
+
+  socket.writable = this.readable = true;
+  socket._state = STATE.CONNECTED;
+  socket._address = info.address;
+  socket._address.port = Number(socket._address.port);
+
   this.emit('connection', socket);
 };
 

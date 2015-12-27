@@ -72,6 +72,7 @@ TcpServer.prototype.listen = function(options: { port: number, hostname: ?string
     this.on('listening', callback);
   }
 
+  Sockets.createSocket(this._socket._id);
   Sockets.listen(this._socket._id, hostname, port);
 
   return this;
