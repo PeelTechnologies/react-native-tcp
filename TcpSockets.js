@@ -17,10 +17,10 @@ exports.createServer = function(connectionListener: (socket: Socket)  => void) :
   return new Server(connectionListener);
 };
 
-exports.connect = exports.createConnection = function(options: ?{ port: ?number | ?string, host: ?string, localAddress: ?string, localPort: ?number}, callback: ?() => void) : Socket {
+// TODO : determine how to properly overload this with flow
+exports.connect = exports.createConnection = function() : Socket {
   var tcpSocket = new Socket();
-  tcpSocket.connect(options, callback);
-  return tcpSocket;
+  return Socket.prototype.connect.apply(tcpSocket, tcpSocket._normalizeConnectArgs(arguments));
 };
 
 exports.isIP = function(input: string) : number {

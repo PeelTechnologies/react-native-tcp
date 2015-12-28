@@ -19,7 +19,7 @@ var Sockets = NativeModules.TcpSockets;
 var base64 = require('base64-js');
 var Base64Str = require('./base64-str');
 var noop = function () {};
-var usedIds = [];
+var instances = 0;
 var STATE = {
   DISCONNECTED: 0,
   CONNECTING: 1,
@@ -27,36 +27,33 @@ var STATE = {
 };
 
 function TcpSocket(options: ?{ id: ?number }) {
-  // $FlowFixMe: suppressing this error flow doesn't like EventEmitter
-  EventEmitter.call(this);
+  if (!(this instanceof TcpSocket)) {
+    return new TcpSocket(options);
+  }
+
+  if (EventEmitter instanceof Function) {
+    EventEmitter.call(this);
+  }
 
   if (options && options.id) {
-    // native generated sockets range from 5000-6000
     // e.g. incoming server connections
     this._id = Number(options.id);
 
-    if (usedIds.indexOf(this._id) !== -1) {
+    if (this._id <= instances) {
       throw new Error('Socket id ' + this._id + 'already in use');
     }
   } else {
     // javascript generated sockets range from 1-1000
-    this._id = Math.floor((Math.random() * 1000) + 1);
-    while (usedIds.indexOf(this._id) !== -1) {
-      this._id = Math.floor((Math.random() * 1000) + 1);
-    }
+    this._id = instances++;
   }
-
-  usedIds.push(this._id);
-
-  // these will be set once there is a connection
-  this.readable = this.writable = false;
-
-  this._registerEvents();
 
   // ensure compatibility with node's EventEmitter
   if (!this.on) {
     this.on = this.addListener.bind(this);
   }
+
+  // these will be set once there is a connection
+  this.writable = this.readable = false;
 
   this._state = STATE.DISCONNECTED;
 }
@@ -71,22 +68,19 @@ TcpSocket.prototype._debug = function() {
   }
 };
 
-TcpSocket.prototype.connect = function(options: ?{ port: ?number | ?string, host: ?string, localAddress: ?string, localPort: ?number }, callback: ?() => void) {
-  if (this._state !== STATE.DISCONNECTED) {
-    throw new Error('Socket is already bound');
+// TODO : determine how to properly overload this with flow
+TcpSocket.prototype.connect = function(options, callback) : TcpSocket {
+  this._registerEvents();
+
+  if (options === null || typeof options !== 'object') {
+    // Old API:
+    // connect(port, [host], [cb])
+    var args = this._normalizeConnectArgs(arguments);
+    return TcpSocket.prototype.connect.apply(this, args);
   }
 
   if (typeof callback === 'function') {
     this.once('connect', callback);
-  }
-
-  if (!options) {
-    options = {
-      host: 'localhost',
-      port: 0,
-      localAddress: null,
-      localPort: null
-    };
   }
 
   var host = options.host || 'localhost';
@@ -107,7 +101,7 @@ TcpSocket.prototype.connect = function(options: ?{ port: ?number | ?string, host
       throw new TypeError('"port" option should be a number or string: ' + port);
     }
 
-    port = Number(port);
+    port = +port;
 
     if (!isLegalPort(port)) {
       throw new RangeError('"port" option should be >= 0 and < 65536: ' + port);
@@ -117,8 +111,10 @@ TcpSocket.prototype.connect = function(options: ?{ port: ?number | ?string, host
   this._state = STATE.CONNECTING;
   this._debug('connecting, host:', host, 'port:', port);
 
-  Sockets.createSocket(this._id);
+  this._destroyed = false;
   Sockets.connect(this._id, host, Number(port), options);
+
+  return this;
 };
 
 // Check that the port number is not NaN when coerced to a number,
@@ -181,6 +177,10 @@ TcpSocket.prototype.destroy = function() {
 };
 
 TcpSocket.prototype._registerEvents = function(): void {
+  if (this._subs && this._subs.length > 0) {
+    return;
+  }
+
   this._subs = [
     DeviceEventEmitter.addListener(
       'tcp-' + this._id + '-connect', this._onConnect.bind(this)
@@ -207,27 +207,20 @@ TcpSocket.prototype._unregisterEvents = function(): void {
   this._subs = [];
 };
 
-TcpSocket.prototype._onConnect = function(address: { port: string, address: string, family: string }): void {
+TcpSocket.prototype._onConnect = function(address: { port: number, address: string, family: string }): void {
   this._debug('received', 'connect');
 
-  this.writable = this.readable = true;
-  this._state = STATE.CONNECTED;
-  this._address = address;
-  this._address.port = Number(this._address.port);
-
+  setConnected(this, address);
   this.emit('connect');
 };
 
-TcpSocket.prototype._onConnection = function(info: { id: number, address: { port: string, address: string, family: string } }): void {
+TcpSocket.prototype._onConnection = function(info: { id: number, address: { port: number, address: string, family: string } }): void {
   this._debug('received', 'connection');
 
   var socket = new TcpSocket({ id: info.id });
 
-  socket.writable = this.readable = true;
-  socket._state = STATE.CONNECTED;
-  socket._address = info.address;
-  socket._address.port = Number(socket._address.port);
-
+  socket._registerEvents();
+  setConnected(socket, info.address);
   this.emit('connection', socket);
 };
 
@@ -250,17 +243,14 @@ TcpSocket.prototype._onData = function(data: string): void {
 TcpSocket.prototype._onClose = function(hadError: boolean): void {
   this._debug('received', 'close');
 
-  this._unregisterEvents();
-
-  this._state = STATE.DISCONNECTED;
-
-  this.emit('close', hadError);
+  setDisconnected(this, hadError);
 };
 
 TcpSocket.prototype._onError = function(error: string): void {
   this._debug('received', 'error');
 
   this.emit('error', normalizeError(error));
+  this.destroy();
 };
 
 TcpSocket.prototype.write = function(buffer: any, callback: ?(err: ?Error) => void) : boolean {
@@ -303,6 +293,22 @@ TcpSocket.prototype.write = function(buffer: any, callback: ?(err: ?Error) => vo
   return true;
 };
 
+function setConnected(socket: TcpSocket, address: { port: number, address: string, family: string } ) {
+  socket.writable = socket.readable = true;
+  socket._state = STATE.CONNECTED;
+  socket._address = address;
+}
+
+function setDisconnected(socket: TcpSocket, hadError: boolean): void {
+  if (socket._state === STATE.DISCONNECTED) {
+    return;
+  }
+
+  socket._unregisterEvents();
+  socket._state = STATE.DISCONNECTED;
+  socket.emit('close', hadError);
+}
+
 function normalizeError(err) {
   if (err) {
     if (typeof err === 'string') {
@@ -312,5 +318,25 @@ function normalizeError(err) {
     return err;
   }
 }
+
+// Returns an array [options] or [options, cb]
+// It is the same as the argument of Socket.prototype.connect().
+TcpSocket.prototype._normalizeConnectArgs = function(args) {
+  var options = {};
+
+  if (args[0] !== null && typeof args[0] === 'object') {
+    // connect(options, [cb])
+    options = args[0];
+  } else {
+    // connect(port, [host], [cb])
+    options.port = args[0];
+    if (typeof args[1] === 'string') {
+      options.host = args[1];
+    }
+  }
+
+  var cb = args[args.length - 1];
+  return typeof cb === 'function' ? [options, cb] : [options];
+};
 
 module.exports = TcpSocket;

@@ -31,7 +31,7 @@ typedef enum RCTTCPError RCTTCPError;
 - (void)onData:(NSNumber *)clientID data:(NSData *)data;
 - (void)onClose:(TcpSocketClient*)client withError:(NSError *)err;
 - (void)onError:(TcpSocketClient*)client withError:(NSError *)err;
-- (NSNumber*)generateRandomId;
+- (NSNumber*)getNextId;
 
 @end
 
@@ -67,7 +67,7 @@ typedef enum RCTTCPError RCTTCPError;
 
 - (BOOL)listen:(NSString *)host port:(int)port error:(NSError **)error;
 
-- (NSDictionary<NSString *, NSString *> *)getAddress;
+- (NSDictionary<NSString *, id> *)getAddress;
 
 /**
  * write data

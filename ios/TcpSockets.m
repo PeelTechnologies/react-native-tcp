@@ -11,9 +11,13 @@
 #import "TcpSockets.h"
 #import "TcpSocketClient.h"
 
+// offset native ids by 5000
+#define COUNTER_OFFSET 5000
+
 @implementation TcpSockets
 {
     NSMutableDictionary<NSNumber *,TcpSocketClient *> *_clients;
+    int _counter;
 }
 
 RCT_EXPORT_MODULE()
@@ -27,11 +31,11 @@ RCT_EXPORT_MODULE()
     }
 }
 
-RCT_EXPORT_METHOD(createSocket:(nonnull NSNumber*)cId)
+- (TcpSocketClient *)createSocket:(nonnull NSNumber*)cId
 {
     if (!cId) {
         RCTLogError(@"%@.createSocket called with nil id parameter.", [self class]);
-        return;
+        return nil;
     }
 
     if (!_clients) {
@@ -40,10 +44,12 @@ RCT_EXPORT_METHOD(createSocket:(nonnull NSNumber*)cId)
 
     if (_clients[cId]) {
         RCTLogError(@"%@.createSocket called twice with the same id.", [self class]);
-        return;
+        return nil;
     }
 
     _clients[cId] = [TcpSocketClient socketClientWithId:cId andConfig:self];
+
+    return _clients[cId];
 }
 
 RCT_EXPORT_METHOD(connect:(nonnull NSNumber*)cId
@@ -51,8 +57,10 @@ RCT_EXPORT_METHOD(connect:(nonnull NSNumber*)cId
                   port:(int)port
                   withOptions:(NSDictionary *)options)
 {
-    TcpSocketClient* client = [self findClient:cId callback:nil];
-    if (!client) return;
+    TcpSocketClient *client = _clients[cId];
+    if (!client) {
+      client = [self createSocket:cId];
+    }
 
     NSError *error = nil;
     if (![client connect:host port:port withOptions:options error:&error])
@@ -88,8 +96,10 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
                   host:(NSString *)host
                   port:(int)port)
 {
-    TcpSocketClient* client = [self findClient:cId callback:nil];
-    if (!client) return;
+    TcpSocketClient* client = _clients[cId];
+    if (!client) {
+      client = [self createSocket:cId];
+    }
 
     NSError *error = nil;
     if (![client listen:host port:port error:&error])
@@ -176,13 +186,8 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
     [_clients removeObjectForKey:cId];
 }
 
--(NSNumber*)generateRandomId {
-    int r = 0;
-    do {
-        r = (arc4random() % 1000) + 5001;
-    } while(_clients[@(r)]);
-
-    return @(r);
+-(NSNumber*)getNextId {
+    return @(_counter++ + COUNTER_OFFSET);
 }
 
 @end

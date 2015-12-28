@@ -24,7 +24,7 @@ function randomPort() {
 var serverPort = randomPort();
 
 var server = net.createServer(function(socket) {
-  console.log('server connected');
+  console.log('server connected on ' + JSON.stringify(socket.address()));
 
   socket.on('data', function (data) {
     console.log('Server Received: ' + data);
@@ -34,19 +34,31 @@ var server = net.createServer(function(socket) {
   socket.on('error', function(error) {
     console.log('error ' + error);
   });
-}).listen({ port: serverPort }, function() {
+}).listen(serverPort, function() {
   console.log('opened server on ' + JSON.stringify(server.address()));
 });
 
-var client = net.createConnection({ port: serverPort }, function() {
+server.on('error', function(error) {
+  console.log('error ' + error);
+});
+
+var client = net.createConnection(serverPort, function() {
   console.log('opened client on ' + JSON.stringify(client.address()));
   client.write('Hello, server! Love, Client.');
 });
 
 client.on('data', function(data) {
-	console.log('Client Received: ' + data);
+  console.log('Client Received: ' + data);
   client.destroy(); // kill client after server's response
   server.close();
+});
+
+client.on('error', function(error) {
+  console.log('client error ' + error);
+});
+
+client.on('close', function() {
+  console.log('client close');
 });
 
 var rctsockets = React.createClass({
@@ -79,15 +91,5 @@ var styles = StyleSheet.create({
     marginBottom: 5,
   },
 });
-
-// only works for 8-bit chars
-function toByteArray(obj) {
-  var uint = new Uint8Array(obj.length);
-  for (var i = 0, l = obj.length; i < l; i++){
-    uint[i] = obj.charCodeAt(i);
-  }
-
-  return new Uint8Array(uint);
-}
 
 AppRegistry.registerComponent('rctsockets', () => rctsockets);

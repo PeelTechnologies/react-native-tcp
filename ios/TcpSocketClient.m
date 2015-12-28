@@ -85,22 +85,22 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     return result;
 }
 
-- (NSDictionary<NSString *, NSString *> *)getAddress
+- (NSDictionary<NSString *, id> *)getAddress
 {
     if (_tcpSocket)
     {
         if (_tcpSocket.isConnected) {
-            return @{ @"port": @(_tcpSocket.connectedPort).stringValue,
+            return @{ @"port": @(_tcpSocket.connectedPort),
                       @"address": _tcpSocket.connectedHost ?: @"unknown",
                       @"family": _tcpSocket.isIPv6?@"IPv6":@"IPv4" };
         } else {
-            return @{ @"port": @(_tcpSocket.localPort).stringValue,
+            return @{ @"port": @(_tcpSocket.localPort),
                       @"address": _tcpSocket.localHost ?: @"unknown",
                       @"family": _tcpSocket.isIPv6?@"IPv6":@"IPv4" };
         }
     }
 
-    return @{ @"port": @"0",
+    return @{ @"port": @(0),
               @"address": @"unknown",
               @"family": @"unkown" };
 }
@@ -201,7 +201,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
 - (void)socket:(GCDAsyncSocket *)sock didAcceptNewSocket:(GCDAsyncSocket *)newSocket
 {
-    TcpSocketClient *inComing = [[TcpSocketClient alloc] initWithClientId:[_clientDelegate generateRandomId]
+    TcpSocketClient *inComing = [[TcpSocketClient alloc] initWithClientId:[_clientDelegate getNextId]
                                                                 andConfig:_clientDelegate
                                                                 andSocket:newSocket];
     [_clientDelegate onConnection: inComing

@@ -22,12 +22,14 @@ function TcpServer(connectionListener: (socket: Socket) => void) {
     return new TcpServer(connectionListener);
   }
 
-  // $FlowFixMe: suppressing this error flow doesn't like EventEmitter
-  EventEmitter.call(this);
+  if (EventEmitter instanceof Function) {
+    EventEmitter.call(this);
+  }
 
   var self = this;
 
   this._socket = new Socket();
+
   // $FlowFixMe: suppressing this error flow doesn't like EventEmitter
   this._socket.on('connect', function() {
     self.emit('listening');
@@ -35,7 +37,6 @@ function TcpServer(connectionListener: (socket: Socket) => void) {
   // $FlowFixMe: suppressing this error flow doesn't like EventEmitter
   this._socket.on('connection', function(socket) {
     self._connections++;
-
     self.emit('connection', socket);
   });
   // $FlowFixMe: suppressing this error flow doesn't like EventEmitter
@@ -45,7 +46,6 @@ function TcpServer(connectionListener: (socket: Socket) => void) {
   // $FlowFixMe: suppressing this error flow doesn't like EventEmitter
   this._socket.on('error', function(error) {
     self.emit('error', error);
-    self._socket.destroy();
   });
 
   if (typeof connectionListener === 'function') {
@@ -64,16 +64,21 @@ TcpServer.prototype._debug = function() {
   }
 };
 
-TcpServer.prototype.listen = function(options: { port: number, hostname: ?string }, callback: ?() => void) : TcpServer {
+// TODO : determine how to properly overload this with flow
+TcpServer.prototype.listen = function() : TcpServer {
+  var args = this._socket._normalizeConnectArgs(arguments);
+  var options = args[0];
+  var callback = args[1];
+
   var port = options.port;
-  var hostname = options.hostname || 'localhost';
+  var host = options.host || 'localhost';
 
   if (callback) {
     this.on('listening', callback);
   }
 
-  Sockets.createSocket(this._socket._id);
-  Sockets.listen(this._socket._id, hostname, port);
+  this._socket._registerEvents();
+  Sockets.listen(this._socket._id, host, port);
 
   return this;
 };
