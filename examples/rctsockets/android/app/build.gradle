@@ -1,0 +1,53 @@
+apply plugin: "com.android.application"
+
+/**
+ * The react.gradle file registers two tasks: bundleDebugJsAndAssets and bundleReleaseJsAndAssets.
+ * These basically call `react-native bundle` with the correct arguments during the Android build
+ * cycle. By default, bundleDebugJsAndAssets is skipped, as in debug/dev mode we prefer to load the
+ * bundle directly from the development server. Below you can see all the possible configurations
+ * and their defaults. If you decide to add a configuration block, make sure to add it before the
+ * `apply from: "react.gradle"` line.
+ */
+
+ project.ext.react = [
+   // the name of the generated asset file containing your JS bundle
+   bundleAssetName: "index.bundle",
+
+   // the entry file for bundle generation
+   entryFile: "index.js",
+]
+
+apply from: "react.gradle"
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "23.0.1"
+
+    defaultConfig {
+        applicationId "com.rctsockets"
+        minSdkVersion 16
+        targetSdkVersion 22
+        versionCode 1
+        versionName "1.0"
+        ndk {
+            abiFilters "armeabi-v7a", "x86"
+        }
+    }
+    buildTypes {
+        release {
+            minifyEnabled false  // Set this to true to enable Proguard
+            proguardFiles getDefaultProguardFile("proguard-android.txt"), "proguard-rules.pro"
+        }
+    }
+    // needed for https://github.com/square/okio/issues/58
+    lintOptions {
+        warning 'InvalidPackage'
+    }
+}
+
+dependencies {
+    compile fileTree(dir: "libs", include: ["*.jar"])
+    compile "com.android.support:appcompat-v7:23.0.1"
+    compile "com.facebook.react:react-native:0.17.+"
+    compile project(':react-native-tcp')
+}

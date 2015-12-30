@@ -1,6 +1,6 @@
 Pod::Spec.new do |s|
   s.name                = 'react-native-tcp'
-  s.version             = '0.1.1'
+  s.version             = '0.2.0'
   s.summary             = 'node\'s net API in React Native.'
   s.description         = <<-DESC
                             Enables accessing tcp sockets in React Native.
