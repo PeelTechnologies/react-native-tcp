@@ -22,33 +22,25 @@ import java.net.UnknownHostException;
 /**
  * Created by aprock on 12/29/15.
  */
-public class TcpSocketManager {
+public final class TcpSocketManager {
     private SparseArray<Object> mClients = new SparseArray<Object>();
 
-    private WeakReference<TcpSocketListener> listener;
-    private AsyncServer server = AsyncServer.getDefault();
+    private WeakReference<TcpSocketListener> mListener;
+    private AsyncServer mServer = AsyncServer.getDefault();
 
-    private int instances = 5000;
+    private int mInstances = 5000;
 
     public TcpSocketManager(TcpSocketListener listener) throws IOException {
-        this.listener = new WeakReference<TcpSocketListener>(listener);
-    }
-
-    private TcpSocketListener getListener() {
-        if (listener != null) {
-            return listener.get();
-        }
-
-        return null;
+        mListener = new WeakReference<TcpSocketListener>(listener);
     }
 
     private void setSocketCallbacks(final Integer cId, final AsyncSocket socket) {
         socket.setClosedCallback(new CompletedCallback() {
             @Override
             public void onCompleted(Exception ex) {
-                TcpSocketListener listener = getListener();
+                TcpSocketListener listener = mListener.get();
                 if (listener != null) {
-                    listener.onClose(cId, null);
+                    listener.onClose(cId, ex==null?null:ex.getMessage());
                 }
             }
         });
@@ -56,7 +48,7 @@ public class TcpSocketManager {
         socket.setDataCallback(new DataCallback() {
             @Override
             public void onDataAvailable(DataEmitter emitter, ByteBufferList bb) {
-                TcpSocketListener listener = getListener();
+                TcpSocketListener listener = mListener.get();
                 if (listener != null) {
                     listener.onData(cId, bb.getAllByteArray());
                 }
@@ -67,7 +59,7 @@ public class TcpSocketManager {
             @Override
             public void onCompleted(Exception ex) {
                 if (ex != null) {
-                    TcpSocketListener listener = getListener();
+                    TcpSocketListener listener = mListener.get();
                     if (listener != null) {
                         listener.onError(cId, ex.getMessage());
                     }
@@ -86,12 +78,12 @@ public class TcpSocketManager {
             socketAddress = new InetSocketAddress(port);
         }
 
-        server.listen(InetAddress.getByName(host), port, new ListenCallback() {
+        mServer.listen(InetAddress.getByName(host), port, new ListenCallback() {
             @Override
             public void onListening(AsyncServerSocket socket) {
                 mClients.put(cId, socket);
 
-                TcpSocketListener listener = getListener();
+                TcpSocketListener listener = mListener.get();
                 if (listener != null) {
                     listener.onConnect(cId, socketAddress);
                 }
@@ -99,25 +91,25 @@ public class TcpSocketManager {
 
             @Override
             public void onAccepted(AsyncSocket socket) {
-                setSocketCallbacks(instances, socket);
-                mClients.put(instances, socket);
+                setSocketCallbacks(mInstances, socket);
+                mClients.put(mInstances, socket);
 
-                TcpSocketListener listener = getListener();
+                TcpSocketListener listener = mListener.get();
                 if (listener != null) {
-                    listener.onConnection(cId, instances, socketAddress);
+                    listener.onConnection(cId, mInstances, socketAddress);
                 }
 
-                instances++;
+                mInstances++;
             }
 
             @Override
             public void onCompleted(Exception ex) {
-                TcpSocketListener listener = getListener();
+                mClients.delete(cId);
+
+                TcpSocketListener listener = mListener.get();
                 if (listener != null) {
                     listener.onClose(cId, ex != null ? ex.getMessage() : null);
                 }
-
-                mClients.remove(cId);
             }
         });
     }
@@ -131,22 +123,19 @@ public class TcpSocketManager {
             socketAddress = new InetSocketAddress(port);
         }
 
-        server.connectSocket(socketAddress, new ConnectCallback() {
+        mServer.connectSocket(socketAddress, new ConnectCallback() {
             @Override
             public void onConnectCompleted(Exception ex, AsyncSocket socket) {
-                if (ex != null) {
-                    TcpSocketListener listener = getListener();
-                    if (listener != null) {
-                        listener.onError(cId, ex.getMessage());
-                    }
-                } else {
+              TcpSocketListener listener = mListener.get();
+                if (ex == null) {
                     mClients.put(cId, socket);
                     setSocketCallbacks(cId, socket);
 
-                    TcpSocketListener listener = getListener();
                     if (listener != null) {
                         listener.onConnect(cId, socketAddress);
                     }
+                } else if (listener != null) {
+                   listener.onError(cId, ex.getMessage());
                 }
             }
         });
@@ -161,14 +150,17 @@ public class TcpSocketManager {
 
     public void close(final Integer cId) {
         Object socket = mClients.get(cId);
-        if (socket == null) {
-            return;
-        }
-
-        if (socket instanceof AsyncSocket) {
-            ((AsyncSocket) socket).close();
-        } else if (socket instanceof AsyncServerSocket) {
-            ((AsyncServerSocket) socket).stop();
+        if (socket != null) {
+            if (socket instanceof AsyncSocket) {
+                ((AsyncSocket) socket).close();
+            } else if (socket instanceof AsyncServerSocket) {
+                ((AsyncServerSocket) socket).stop();
+            }
+        } else {
+            TcpSocketListener listener = mListener.get();
+            if (listener != null) {
+               listener.onError(cId, "unable to find socket");
+            }
         }
     }
 
@@ -177,4 +169,5 @@ public class TcpSocketManager {
             close(mClients.keyAt(i));
         }
         mClients.clear();
-    }}
+    }
+}

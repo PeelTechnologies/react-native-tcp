@@ -162,9 +162,9 @@ TcpSocket.prototype.end = function(data, encoding) {
   }
 
   this._destroyed = true;
-  this._debug('closing');
+  this._debug('ending');
 
-  Sockets.end(this._id, this._debug.bind(this, 'end'));
+  Sockets.end(this._id);
 };
 
 TcpSocket.prototype.destroy = function() {
@@ -172,7 +172,7 @@ TcpSocket.prototype.destroy = function() {
     this._destroyed = true;
     this._debug('destroying');
 
-    Sockets.destroy(this._id, this._debug.bind(this, 'destroy'));
+    Sockets.destroy(this._id);
   }
 };
 

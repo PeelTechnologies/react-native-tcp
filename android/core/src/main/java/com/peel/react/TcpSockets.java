@@ -124,7 +124,7 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
     }
 
     @ReactMethod
-    public void end(final Integer cId, final Callback callback) {
+    public void end(final Integer cId) {
         new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
             @Override
             protected void doInBackgroundGuarded(Void... params) {
@@ -134,8 +134,8 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
     }
 
     @ReactMethod
-    public void destroy(final Integer cId, final Callback callback) {
-        end(cId, callback);
+    public void destroy(final Integer cId) {
+        end(cId);
     }
 
     /** TcpSocketListener */

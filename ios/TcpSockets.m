@@ -27,7 +27,7 @@ RCT_EXPORT_MODULE()
 -(void)dealloc
 {
     for (NSNumber *cId in _clients.allKeys) {
-        [self destroyClient:cId callback:nil];
+        [self destroyClient:cId];
     }
 }
 
@@ -73,7 +73,7 @@ RCT_EXPORT_METHOD(connect:(nonnull NSNumber*)cId
 RCT_EXPORT_METHOD(write:(nonnull NSNumber*)cId
                   string:(NSString *)base64String
                   callback:(RCTResponseSenderBlock)callback) {
-    TcpSocketClient* client = [self findClient:cId callback:callback];
+    TcpSocketClient* client = [self findClient:cId];
     if (!client) return;
 
     // iOS7+
@@ -82,14 +82,12 @@ RCT_EXPORT_METHOD(write:(nonnull NSNumber*)cId
     [client writeData:data callback:callback];
 }
 
-RCT_EXPORT_METHOD(end:(nonnull NSNumber*)cId
-                  callback:(RCTResponseSenderBlock)callback) {
-    [self endClient:cId callback:callback];
+RCT_EXPORT_METHOD(end:(nonnull NSNumber*)cId) {
+    [self endClient:cId];
 }
 
-RCT_EXPORT_METHOD(destroy:(nonnull NSNumber*)cId
-                 callback:(RCTResponseSenderBlock)callback) {
-    [self destroyClient:cId callback:callback];
+RCT_EXPORT_METHOD(destroy:(nonnull NSNumber*)cId) {
+    [self destroyClient:cId];
 }
 
 RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
@@ -143,22 +141,19 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
 }
 
 - (void)onError:(TcpSocketClient*) client withError:(NSError *)err {
-    NSString *msg = [err userInfo][@"NSLocalizedFailureReason"] ?: [err userInfo][@"NSLocalizedDescription"];
+    NSString *msg = err.localizedFailureReason ?: err.localizedDescription;
     [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-error", client.id]
                                                     body:msg];
 
 }
 
--(TcpSocketClient*)findClient:(nonnull NSNumber*)cId callback:(RCTResponseSenderBlock)callback
+-(TcpSocketClient*)findClient:(nonnull NSNumber*)cId
 {
     TcpSocketClient *client = _clients[cId];
     if (!client) {
-        if (!callback) {
-            RCTLogError(@"%@.missing callback parameter.", [self class]);
-        } else {
-            callback(@[[NSString stringWithFormat:@"no client found with id %@", cId]]);
-        }
-
+        NSString *msg = [NSString stringWithFormat:@"no client found with id %@", cId];
+        [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-error", cId]
+                                                        body:msg];
         return nil;
     }
 
@@ -166,20 +161,16 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
 }
 
 -(void)endClient:(nonnull NSNumber*)cId
-           callback:(RCTResponseSenderBlock)callback
 {
-    TcpSocketClient* client = [self findClient:cId callback:callback];
+    TcpSocketClient* client = [self findClient:cId];
     if (!client) return;
 
     [client end];
-
-    if (callback) callback(@[]);
 }
 
 -(void)destroyClient:(nonnull NSNumber*)cId
-             callback:(RCTResponseSenderBlock)callback
 {
-    TcpSocketClient* client = [self findClient:cId callback:nil];
+    TcpSocketClient* client = [self findClient:cId];
     if (!client) return;
 
     [client destroy];
