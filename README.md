@@ -28,7 +28,7 @@ npm install --save react-native-tcp
 ```gradle
 ...
 include ':react-native-tcp'
-project(':react-native-tcp').projectDir = new File(settingsDir, '../node_modules/react-native-tcp/android')
+project(':react-native-tcp').projectDir = new File(settingsDir, '../node_modules/react-native-tcp/android/core')
 ```
 * `android/app/build.gradle`
 
