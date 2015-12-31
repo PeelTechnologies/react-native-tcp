@@ -44,7 +44,7 @@ dependencies {
 ```java
 ...
 
-import com.tradle.peel.*; // <--- import
+import com.peel.react.*; // <--- import
 
 public class MainActivity extends Activity implements DefaultHardwareBackBtnHandler {
 	...
