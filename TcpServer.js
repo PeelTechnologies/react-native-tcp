@@ -101,4 +101,7 @@ TcpServer.prototype.close = function(callback: ?() => void) {
   this._socket.end();
 };
 
+// unimplemented net.Server apis
+TcpServer.prototype.ref = TcpServer.prototype.unref = function() { /* nop */ };
+
 module.exports = TcpServer;

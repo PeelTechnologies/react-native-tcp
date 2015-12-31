@@ -339,4 +339,13 @@ TcpSocket.prototype._normalizeConnectArgs = function(args) {
   return typeof cb === 'function' ? [options, cb] : [options];
 };
 
+// unimplemented net.Socket apis
+TcpSocket.prototype.pause =
+TcpSocket.prototype.resume =
+TcpSocket.prototype.ref =
+TcpSocket.prototype.unref =
+TcpSocket.prototype.setNoDelay =
+TcpSocket.prototype.setKeepAlive =
+TcpSocket.prototype.setEncoding = function() { /* nop */ };
+
 module.exports = TcpSocket;
