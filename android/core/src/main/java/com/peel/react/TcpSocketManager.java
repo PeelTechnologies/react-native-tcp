@@ -3,11 +3,13 @@ package com.peel.react;
 import android.support.annotation.Nullable;
 import android.util.SparseArray;
 
+import com.koushikdutta.async.AsyncNetworkSocket;
 import com.koushikdutta.async.AsyncServer;
 import com.koushikdutta.async.AsyncServerSocket;
 import com.koushikdutta.async.AsyncSocket;
 import com.koushikdutta.async.ByteBufferList;
 import com.koushikdutta.async.DataEmitter;
+import com.koushikdutta.async.Util;
 import com.koushikdutta.async.callback.CompletedCallback;
 import com.koushikdutta.async.callback.ConnectCallback;
 import com.koushikdutta.async.callback.DataCallback;
@@ -94,9 +96,12 @@ public final class TcpSocketManager {
                 setSocketCallbacks(mInstances, socket);
                 mClients.put(mInstances, socket);
 
+                AsyncNetworkSocket socketConverted = Util.getWrappedSocket(socket, AsyncNetworkSocket.class);
+                InetSocketAddress remoteAddress = socketConverted != null ? socketConverted.getRemoteAddress() : socketAddress;
+
                 TcpSocketListener listener = mListener.get();
                 if (listener != null) {
-                    listener.onConnection(cId, mInstances, socketAddress);
+                    listener.onConnection(cId, mInstances, remoteAddress);
                 }
 
                 mInstances++;
