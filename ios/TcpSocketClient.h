@@ -57,16 +57,29 @@ typedef enum RCTTCPError RCTTCPError;
 /// @name Instance Methods
 ///---------------------------------------------------------------------------------------
 /**
- * Binds to a host and port
+ * Connects to a host and port
  *
  * @param port
  * @param host ip address
- * @return true if bound, false if there was an error
+ * @param options NSDictionary which can have @"localAddress" and @"localPort" to specify the local interface
+ * @return true if connected, false if there was an error
  */
 - (BOOL)connect:(NSString *)host port:(int)port withOptions:(NSDictionary *)options error:(NSError **)error;
 
+/**
+ * Starts listening on a local host and port
+ *
+ * @param local ip address
+ * @param local port
+ * @return true if connected, false if there was an error
+ */
 - (BOOL)listen:(NSString *)host port:(int)port error:(NSError **)error;
 
+/**
+ * Returns the address information
+ *
+ * @return NSDictionary with @"address" host, @"port" port, @"family" IPv4/IPv6
+ */
 - (NSDictionary<NSString *, id> *)getAddress;
 
 /**

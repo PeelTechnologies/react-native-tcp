@@ -230,30 +230,12 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     [_clientDelegate onClose:self withError:(!err || err.code == GCDAsyncSocketClosedError ? nil : err)];
 }
 
-- (NSError *)badParamError:(NSString *)errMsg
-{
-    NSDictionary *userInfo = [NSDictionary dictionaryWithObject:errMsg forKey:NSLocalizedDescriptionKey];
-
-    return [NSError errorWithDomain:RCTTCPErrorDomain
-                               code:RCTTCPBadParamError
-                           userInfo:userInfo];
-}
-
 - (NSError *)badInvocationError:(NSString *)errMsg
 {
     NSDictionary *userInfo = [NSDictionary dictionaryWithObject:errMsg forKey:NSLocalizedDescriptionKey];
 
     return [NSError errorWithDomain:RCTTCPErrorDomain
                                code:RCTTCPInvalidInvocationError
-                           userInfo:userInfo];
-}
-
-- (NSError *)sendFailedError:(NSString *)errMsg
-{
-    NSDictionary *userInfo = [NSDictionary dictionaryWithObject:errMsg forKey:NSLocalizedDescriptionKey];
-
-    return [NSError errorWithDomain:RCTTCPErrorDomain
-                               code:RCTTCPSendFailedError
                            userInfo:userInfo];
 }
 
