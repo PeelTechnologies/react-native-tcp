@@ -2,8 +2,6 @@
 
 node's [net](https://nodejs.org/api/net.html) API in React Native
 
-_originally forked from [react-native-udp](https://github.com/tradle/react-native-udp)_
-
 This module is used by [Peel](http://www.peel.com/)
 
 ## Install
@@ -128,3 +126,7 @@ add select tests from node's tests for net
 [Andy Prock](https://github.com/aprock)  
 
 PR's welcome!
+
+
+
+_originally forked from [react-native-udp](https://github.com/tradle/react-native-udp)_

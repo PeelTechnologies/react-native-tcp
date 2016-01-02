@@ -27,8 +27,7 @@
     "name": "Andy Prock",
     "email": "aprock@gmail.com"
   },
-  "license": "UNLICENSED",
-  "private": true,
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/PeelTechnologies/react-native-tcp/issues"
   },
