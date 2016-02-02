@@ -1,81 +1,63 @@
 package com.rctsockets;
 
-import android.app.Activity;
-import android.os.Bundle;
-import android.view.KeyEvent;
-
-import com.facebook.react.LifecycleState;
-import com.facebook.react.ReactInstanceManager;
-import com.facebook.react.ReactRootView;
-import com.facebook.react.modules.core.DefaultHardwareBackBtnHandler;
+import com.facebook.react.ReactActivity;
+import com.facebook.react.ReactPackage;
 import com.facebook.react.shell.MainReactPackage;
-import com.facebook.soloader.SoLoader;
+
+import java.util.Arrays;
+import java.util.List;
 
 import com.peel.react.*; // <--- import
 
-public class MainActivity extends Activity implements DefaultHardwareBackBtnHandler {
-
-    private ReactInstanceManager mReactInstanceManager;
-    private ReactRootView mReactRootView;
-
+public class MainActivity extends ReactActivity {
+    /**
+     * Returns the name of the main component registered from JavaScript.
+     * This is used to schedule rendering of the component.
+     */
     @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        mReactRootView = new ReactRootView(this);
-
-        mReactInstanceManager = ReactInstanceManager.builder()
-                .setApplication(getApplication())
-                .setBundleAssetName("index.bundle")
-                .setJSMainModuleName("index")
-                .addPackage(new MainReactPackage())
-                .addPackage(new TcpSocketsModule())           // <- add here
-                .setUseDeveloperSupport(BuildConfig.DEBUG)
-                .setInitialLifecycleState(LifecycleState.RESUMED)
-                .build();
-
-        mReactRootView.startReactApplication(mReactInstanceManager, "rctsockets", null);
-
-        setContentView(mReactRootView);
+    protected String getMainComponentName() {
+        return "rctsockets";
     }
 
+    /**
+     * Returns whether dev mode should be enabled.
+     * This enables e.g. the dev menu.
+     */
     @Override
-    public boolean onKeyUp(int keyCode, KeyEvent event) {
-        if (keyCode == KeyEvent.KEYCODE_MENU && mReactInstanceManager != null) {
-            mReactInstanceManager.showDevOptionsDialog();
-            return true;
-        }
-        return super.onKeyUp(keyCode, event);
+    protected boolean getUseDeveloperSupport() {
+        return BuildConfig.DEBUG;
     }
 
+    /**
+     * Returns the name of the bundle in assets. If this is null, and no file path is specified for
+     * the bundle, the app will only work with {@code getUseDeveloperSupport} enabled and will
+     * always try to load the JS bundle from the packager server.
+     * e.g. "index.android.bundle"
+     */
     @Override
-    public void onBackPressed() {
-      if (mReactInstanceManager != null) {
-        mReactInstanceManager.onBackPressed();
-      } else {
-        super.onBackPressed();
-      }
+    protected String getBundleAssetName() {
+        return "index.bundle";
+    };
+
+    /**
+     * Returns the name of the main module. Determines the URL used to fetch the JS bundle
+     * from the packager server. It is only used when dev support is enabled.
+     * This is the first file to be executed once the {@link ReactInstanceManager} is created.
+     * e.g. "index.android"
+     */
+     @Override
+    protected String getJSMainModuleName() {
+        return "index";
     }
 
+    /**
+     * A list of packages used by the app. If the app uses additional views
+     * or modules besides the default ones, add more packages here.
+     */
     @Override
-    public void invokeDefaultOnBackPressed() {
-      super.onBackPressed();
-    }
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-
-        if (mReactInstanceManager != null) {
-            mReactInstanceManager.onPause();
-        }
-    }
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-
-        if (mReactInstanceManager != null) {
-            mReactInstanceManager.onResume(this, this);
-        }
+    protected List<ReactPackage> getPackages() {
+        return Arrays.<ReactPackage>asList(
+          new MainReactPackage(),
+          new TcpSocketsModule()); // <- add here
     }
 }
