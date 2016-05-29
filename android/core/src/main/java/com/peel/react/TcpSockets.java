@@ -142,6 +142,9 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
 
     @Override
     public void onConnection(Integer serverId, Integer clientId, InetSocketAddress socketAddress) {
+        if (mShuttingDown) {
+            return;
+        }
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", clientId);
 
@@ -160,6 +163,9 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
 
     @Override
     public void onConnect(Integer id, InetSocketAddress address) {
+        if (mShuttingDown) {
+            return;
+        }
         WritableMap eventParams = Arguments.createMap();
         eventParams.putString("address", address.getHostName());
         eventParams.putInt("port", address.getPort());
@@ -173,6 +179,9 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
 
     @Override
     public void onData(Integer id, byte[] data) {
+        if (mShuttingDown) {
+            return;
+        }
         ReactContext reactContext = TcpSockets.this.getReactApplicationContext();
         reactContext
                 .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
@@ -181,6 +190,9 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
 
     @Override
     public void onClose(Integer id, String error) {
+        if (mShuttingDown) {
+            return;
+        }
         if (error != null) {
             onError(id, error);
         }
@@ -193,6 +205,9 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
 
     @Override
     public void onError(Integer id, String error) {
+        if (mShuttingDown) {
+            return;
+        }
         ReactContext reactContext = TcpSockets.this.getReactApplicationContext();
         reactContext
                 .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
