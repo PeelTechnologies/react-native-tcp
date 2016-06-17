@@ -1,22 +1,17 @@
 {
-  "name": "rctsockets",
+  "name": "RctSockets",
   "version": "0.0.1",
   "private": true,
   "scripts": {
-    "start": "react-native start"
+    "start": "node node_modules/react-native/local-cli/cli.js start"
   },
   "browser": {
     "net": "react-native-tcp"
   },
   "dependencies": {
-    "buffer": "^3.5.3",
-    "events": "^1.1.0",
-    "react-native": "^0.18.1",
-    "react-native-tcp": "../../",
-    "util": "^0.10.3"
-  },
-  "devDependencies": {
-    "babel-eslint": "^4.1.6",
-    "eslint-plugin-react": "^3.11.3"
+    "buffer": "^4.6.0",
+    "react": "^15.1.0",
+    "react-native": "0.27.2",
+    "react-native-tcp": "../../"
   }
 }

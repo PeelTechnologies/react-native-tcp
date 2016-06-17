@@ -13,47 +13,10 @@ This module is used by [Peel](http://www.peel.com/)
 npm install --save react-native-tcp
 ```
 
-### `iOS`
+## Link in the native dependency
 
-* Drag TcpSockets.xcodeproj from node_modules/react-native-tcp/ios into your XCode project.
-
-* Click on the project in XCode, go to Build Phases, then Link Binary With Libraries and add `libTcpSockets.a`
-
-### `Android`
-
-* `android/settings.gradle`
-
-```gradle
-...
-include ':react-native-tcp'
-project(':react-native-tcp').projectDir = new File(settingsDir, '../node_modules/react-native-tcp/android/core')
 ```
-* `android/app/build.gradle`
-
-```gradle
-dependencies {
-	...
-	compile project(':react-native-tcp')
-}
-```
-
-* register module (in MainActivity.java)
-
-```java
-...
-
-import com.peel.react.*; // <--- import
-
-public class MainActivity extends Activity implements DefaultHardwareBackBtnHandler {
-	...
-
-    @Override
-    protected List<ReactPackage> getPackages() {
-      return Arrays.<ReactPackage>asList(
-        new MainReactPackage(),
-        new TcpSocketsModule()); // <- add here
-    }
-}
+rnpm link react-native-tcp
 ```
 
 Buckle up, Dorothy
