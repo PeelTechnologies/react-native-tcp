@@ -19,7 +19,30 @@ npm install --save react-native-tcp
 rnpm link react-native-tcp
 ```
 
-Buckle up, Dorothy
+### Android
+
+* Register and load the Native Module in your Main application
+([import](examples/rctsockets/android/app/src/main/java/com/rctsockets/MainApplication.java#L11), [getPackages](examples/rctsockets/android/app/src/main/java/com/rctsockets/MainApplication.java#L28))
+  * __Note:__ prior to react-native 0.29.2, this should happen in your Main Activity
+
+```java
+...
+
+import com.peel.react.TcpSocketsModule;			// <--- import //
+
+public class MainApplication extends Application implements ReactApplication {
+	...
+	@Override
+	protected List<ReactPackage> getPackages() {
+		return Arrays.<ReactPackage>asList(
+			new MainReactPackage(),
+			new TcpSocketsModule()				// <- add here //
+		);
+	}
+}
+```
+
+***Step 3 Profit***
 
 ## Usage
 
