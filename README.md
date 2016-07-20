@@ -21,32 +21,28 @@ rnpm link react-native-tcp
 
 ### Android
 
-* Register and load the Native Module in your Main activity
-([import](examples/rctsockets/android/app/src/main/java/com/rctsockets/MainActivity.java#L4), [getPackages](examples/rctsockets/android/app/src/main/java/com/rctsockets/MainActivity.java#L39))
+* Register and load the Native Module in your Main application
+([import](examples/rctsockets/android/app/src/main/java/com/rctsockets/MainApplication.java#L11), [getPackages](examples/rctsockets/android/app/src/main/java/com/rctsockets/MainApplication.java#L28))
+  * __Note:__ prior to react-native 0.29.2, this should happen in your Main Activity
 
 ```java
 ...
 
-import com.peel.react.TcpSocketsModule;     // <--- import //
+import com.peel.react.TcpSocketsModule;			// <--- import //
 
-public class MainActivity extends ReactActivity {
+public class MainApplication extends Application implements ReactApplication {
 	...
-
-  /**
-   * A list of packages used by the app. If the app uses additional views
-   * or modules besides the default ones, add more packages here.
-   */
-  @Override
-  protected List<ReactPackage> getPackages() {
-      return Arrays.<ReactPackage>asList(
-          new MainReactPackage(),
-          new TcpSocketsModule()           // <- add here //
-      );
-  }
+	@Override
+	protected List<ReactPackage> getPackages() {
+		return Arrays.<ReactPackage>asList(
+			new MainReactPackage(),
+			new TcpSocketsModule()				// <- add here //
+		);
+	}
 }
 ```
 
-Buckle up, Dorothy
+***Step 3 Profit***
 
 ## Usage
 
