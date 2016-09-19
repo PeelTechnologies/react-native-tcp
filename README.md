@@ -16,30 +16,7 @@ npm install --save react-native-tcp
 ## Link in the native dependency
 
 ```
-rnpm link react-native-tcp
-```
-
-### Android
-
-* Register and load the Native Module in your Main application
-([import](examples/rctsockets/android/app/src/main/java/com/rctsockets/MainApplication.java#L11), [getPackages](examples/rctsockets/android/app/src/main/java/com/rctsockets/MainApplication.java#L28))
-  * __Note:__ prior to react-native 0.29.2, this should happen in your Main Activity
-
-```java
-...
-
-import com.peel.react.TcpSocketsModule;			// <--- import //
-
-public class MainApplication extends Application implements ReactApplication {
-	...
-	@Override
-	protected List<ReactPackage> getPackages() {
-		return Arrays.<ReactPackage>asList(
-			new MainReactPackage(),
-			new TcpSocketsModule()				// <- add here //
-		);
-	}
-}
+react-native link react-native-tcp
 ```
 
 ***Step 3 Profit***
@@ -60,7 +37,7 @@ _only if you want to write require('net') in your javascript_
 
 ### JS
 
-_see/run [index.js](examples/rctsockets) for a complete example, but basically it's just like net_
+_see/run [index.ios.js/index.android.js](examples/rctsockets) for a complete example, but basically it's just like net_
 
 ```js
 var net = require('net');
@@ -68,17 +45,17 @@ var net = require('net');
 // var net = require('react-native-tcp')
 
 var server = net.createServer(function(socket) {
-	socket.write('excellent!');
+  socket.write('excellent!');
 }).listen(12345);
 
 var client = net.createConnection(12345);
 
 client.on('error', function(error) {
-	console.log(error)
+  console.log(error)
 });
 
 client.on('data', function(data) {
-	console.log('message was received', data)
+  console.log('message was received', data)
 });
 ```
 
