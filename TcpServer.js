@@ -71,7 +71,7 @@ TcpServer.prototype.listen = function() : TcpServer {
   var callback = args[1];
 
   var port = options.port;
-  var host = options.host || 'localhost';
+  var host = options.host || '0.0.0.0';
 
   if (callback) {
     this.on('listening', callback);
