@@ -117,6 +117,10 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
     _tcpSocket = [[GCDAsyncSocket alloc] initWithDelegate:self delegateQueue:[self methodQueue]];
 
+    // GCDAsyncSocket doesn't recognize 0.0.0.0
+    if ([@"0.0.0.0" isEqualToString: host]) {
+        host = @"localhost";
+    }
     BOOL result = [_tcpSocket acceptOnInterface:host port:port error:error];
     if (result == YES) {
         [_clientDelegate onConnect: self];
