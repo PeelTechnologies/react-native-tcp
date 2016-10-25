@@ -8,7 +8,7 @@
 
 'use strict';
 
-var inherits = require('inherits');
+var util = require('util');
 var EventEmitter = require('events').EventEmitter;
 var {
   NativeModules
@@ -55,7 +55,7 @@ function TcpServer(connectionListener: (socket: Socket) => void) {
   this._connections = 0;
 }
 
-inherits(TcpServer, EventEmitter);
+util.inherits(TcpServer, EventEmitter);
 
 TcpServer.prototype._debug = function() {
   if (__DEV__) {

@@ -8,8 +8,12 @@
 
 'use strict';
 
-var inherits = require('inherits');
-var EventEmitter = require('events').EventEmitter;
+global.process = require('process'); // needed to make stream-browserify happy
+var Buffer = global.Buffer = global.Buffer || require('buffer').Buffer;
+
+var util = require('util');
+var stream = require('stream-browserify');
+// var EventEmitter = require('events').EventEmitter;
 var ipRegex = require('ip-regex');
 var {
   DeviceEventEmitter,
@@ -31,10 +35,6 @@ function TcpSocket(options: ?{ id: ?number }) {
     return new TcpSocket(options);
   }
 
-  if (EventEmitter instanceof Function) {
-    EventEmitter.call(this);
-  }
-
   if (options && options.id) {
     // e.g. incoming server connections
     this._id = Number(options.id);
@@ -47,6 +47,8 @@ function TcpSocket(options: ?{ id: ?number }) {
     this._id = instances++;
   }
 
+  stream.Duplex.call(this, {});
+
   // ensure compatibility with node's EventEmitter
   if (!this.on) {
     this.on = this.addListener.bind(this);
@@ -56,9 +58,11 @@ function TcpSocket(options: ?{ id: ?number }) {
   this.writable = this.readable = false;
 
   this._state = STATE.DISCONNECTED;
+
+  this.read(0);
 }
 
-inherits(TcpSocket, EventEmitter);
+util.inherits(TcpSocket, stream.Duplex);
 
 TcpSocket.prototype._debug = function() {
   if (__DEV__) {
@@ -124,7 +128,33 @@ function isLegalPort(port: number) : boolean {
     return false;
   }
   return +port === (port >>> 0) && port >= 0 && port <= 0xFFFF;
-}
+};
+
+TcpSocket.prototype.read = function(n) {
+  if (n === 0) {
+    return stream.Readable.prototype.read.call(this, n);
+  }
+
+  this.read = stream.Readable.prototype.read;
+  this._consuming = true;
+  return this.read(n);
+};
+
+// Just call handle.readStart until we have enough in the buffer
+TcpSocket.prototype._read = function(n) {
+  this._debug('_read');
+
+  if (this._state === STATE.CONNECTING) {
+    this._debug('_read wait for connection');
+    this.once('connect', () => this._read(n));
+  } else if (!this._reading) {
+    // not already reading, start the flow
+    this._debug('Socket._read resume');
+    this._reading = true;
+    this.resume();
+  }
+};
+
 
 TcpSocket.prototype.setTimeout = function(msecs: number, callback: () => void) {
   var self = this;
@@ -153,12 +183,20 @@ TcpSocket.prototype.address = function() : { port: number, address: string, fami
 };
 
 TcpSocket.prototype.end = function(data, encoding) {
+  stream.Duplex.prototype.end.call(this, data, encoding);
+  this.writable = false;
+
   if (this._destroyed) {
     return;
   }
 
   if (data) {
     this.write(data, encoding);
+  }
+
+  if (this.readable) {
+    this.read(0);
+    this.readable = false;
   }
 
   this._destroyed = true;
@@ -212,6 +250,8 @@ TcpSocket.prototype._onConnect = function(address: { port: number, address: stri
 
   setConnected(this, address);
   this.emit('connect');
+
+  this.read(0);
 };
 
 TcpSocket.prototype._onConnection = function(info: { id: number, address: { port: number, address: string, family: string } }): void {
@@ -232,12 +272,22 @@ TcpSocket.prototype._onData = function(data: string): void {
     this._timeout = null;
   }
 
-  // from base64 string
-  var buffer = typeof Buffer === 'undefined'
-    ? base64.toByteArray(data)
-    : new global.Buffer(data, 'base64');
+  if (data && data.length > 0) {
+    // debug('got data');
 
-  this.emit('data', buffer);
+    // read success.
+    // In theory (and in practice) calling readStop right now
+    // will prevent this from being called again until _read() gets
+    // called again.
+
+    var ret = this.push(new Buffer(data, 'base64'));
+    if (this._reading && !ret) {
+      this._reading = false;
+      this.pause();
+    }
+
+    return;
+  }
 };
 
 TcpSocket.prototype._onClose = function(hadError: boolean): void {
@@ -253,7 +303,16 @@ TcpSocket.prototype._onError = function(error: string): void {
   this.destroy();
 };
 
-TcpSocket.prototype.write = function(buffer: any, callback: ?(err: ?Error) => void) : boolean {
+TcpSocket.prototype.write = function(chunk, encoding, cb) {
+  if (typeof chunk !== 'string' && !(Buffer.isBuffer(chunk))) {
+    throw new TypeError(
+      'Invalid data, chunk must be a string or buffer, not ' + typeof chunk);
+  }
+
+  return stream.Duplex.prototype.write.apply(this, arguments);
+};
+
+TcpSocket.prototype._write = function(buffer: any, encoding: ?String, callback: ?(err: ?Error) => void) : boolean {
   var self = this;
 
   if (this._state === STATE.DISCONNECTED) {
@@ -262,17 +321,16 @@ TcpSocket.prototype.write = function(buffer: any, callback: ?(err: ?Error) => vo
     // we're ok, GCDAsyncSocket handles queueing internally
   }
 
-  var cb = callback || noop;
+  callback = callback || noop;
   var str;
   if (typeof buffer === 'string') {
     self._debug('socket.WRITE(): encoding as base64');
     str = Base64Str.encode(buffer);
-  } else if (typeof Buffer !== 'undefined' && global.Buffer.isBuffer(buffer)) {
+  } else if (Buffer.isBuffer(buffer)) {
     str = buffer.toString('base64');
-  } else if (buffer instanceof Uint8Array || Array.isArray(buffer)) {
-    str = base64.fromByteArray(buffer);
   } else {
-    throw new Error('invalid message format');
+    throw new TypeError(
+      'Invalid data, chunk must be a string or buffer, not ' + typeof buffer);
   }
 
   Sockets.write(this._id, str, function(err) {
@@ -284,10 +342,10 @@ TcpSocket.prototype.write = function(buffer: any, callback: ?(err: ?Error) => vo
     err = normalizeError(err);
     if (err) {
       self._debug('write failed', err);
-      return cb(err);
+      return callback(err);
     }
 
-    cb();
+    callback();
   });
 
   return true;
@@ -340,8 +398,6 @@ TcpSocket.prototype._normalizeConnectArgs = function(args) {
 };
 
 // unimplemented net.Socket apis
-TcpSocket.prototype.pause =
-TcpSocket.prototype.resume =
 TcpSocket.prototype.ref =
 TcpSocket.prototype.unref =
 TcpSocket.prototype.setNoDelay =
