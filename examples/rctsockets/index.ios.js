@@ -13,8 +13,6 @@ import {
   View
 } from 'react-native';
 
-global.Buffer = global.Buffer || require('buffer').Buffer;
-
 var net = require('net');
 
 function randomPort() {
