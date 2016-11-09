@@ -55,6 +55,10 @@ class RctSockets extends Component {
       this.updateChatter('error ' + error);
     });
 
+    server.on('close', () => {
+      this.updateChatter('server close');
+    });
+
     let client = net.createConnection(serverPort, () => {
       this.updateChatter('opened client on ' + JSON.stringify(client.address()));
       client.write('Hello, server! Love, Client.');
