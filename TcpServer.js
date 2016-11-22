@@ -40,10 +40,6 @@ function TcpServer(connectionListener: (socket: Socket) => void) {
     self.emit('connection', socket);
   });
   // $FlowFixMe: suppressing this error flow doesn't like EventEmitter
-  this._socket.on('close', function() {
-    self.emit('close');
-  });
-  // $FlowFixMe: suppressing this error flow doesn't like EventEmitter
   this._socket.on('error', function(error) {
     self.emit('error', error);
   });
@@ -74,7 +70,7 @@ TcpServer.prototype.listen = function() : TcpServer {
   var host = options.host || '0.0.0.0';
 
   if (callback) {
-    this.on('listening', callback);
+    this.once('listening', callback);
   }
 
   this._socket._registerEvents();
@@ -90,15 +86,28 @@ TcpServer.prototype.getConnections = function(callback: (err: ?any, count: numbe
 };
 
 TcpServer.prototype.address = function() : { port: number, address: string, family: string } {
-  return this._socket.address();
+  return this._socket ? this._socket.address() : {};
 };
 
 TcpServer.prototype.close = function(callback: ?() => void) {
-  if (callback) {
-    this.on('close', callback);
+  if (typeof callback === 'function') {
+    if (!this._socket) {
+      this.once('close', function close() {
+        callback(new Error('Not running'));
+      });
+    } else {
+      this.once('close', callback);
+    }
   }
 
-  this._socket.end();
+  if (this._socket) {
+    this._socket.end();
+  }
+
+  var self = this;
+  setImmediate(function () {
+    self.emit('close');
+  });
 };
 
 // unimplemented net.Server apis
