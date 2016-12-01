@@ -19,7 +19,22 @@ npm install --save react-native-tcp
 react-native link react-native-tcp
 ```
 
-***Step 3 Profit***
+## Additional dependencies
+
+### Due to limitations in the react-native packager, streams need to be hacked in with [rn-nodeify](https://www.npmjs.com/package/rn-nodeify)
+
+1. install rn-nodeify as a dev-dependency
+```
+npm install --save-dev rn-nodeify
+```
+2. run rn-nodeify manually
+```
+rn-nodeify --install stream,process,util --hack
+```
+3. optionally you can add this as a postinstall script
+```
+"postinstall": "rn-nodeify --install stream,process,util --hack"
+```
 
 ## Usage
 
@@ -57,14 +72,6 @@ client.on('error', function(error) {
 client.on('data', function(data) {
   console.log('message was received', data)
 });
-```
-
-### Note
-
-If you want to send and receive node Buffer objects, you'll have to "npm install buffer" and set it as a global for TcpSockets to pick it up:
-
-```js
-global.Buffer = global.Buffer || require('buffer').Buffer
 ```
 
 ### TODO

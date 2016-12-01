@@ -25,7 +25,7 @@
   ],
   "author": {
     "name": "Andy Prock",
-    "email": "aprock@gmail.com"
+    "email": "aprock@protonmail.com"
   },
   "license": "MIT",
   "bugs": {
@@ -38,7 +38,6 @@
     "events": "^1.0.2",
     "ip-regex": "^1.0.3",
     "process": "^0.11.9",
-    "stream-browserify": "^2.0.1",
     "util": "^0.10.3"
   },
   "devDependencies": {
