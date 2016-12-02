@@ -112,6 +112,12 @@ TcpSocket.prototype.connect = function(options, callback) : TcpSocket {
     }
   }
 
+  if (options.timeout) {
+    this.setTimeout(options.timeout);
+  } else if (this._timeout) {
+    this._activeTimer(this._timeout.msecs);
+  }
+
   this._state = STATE.CONNECTING;
   this._debug('connecting, host:', host, 'port:', port);
 
@@ -155,27 +161,48 @@ TcpSocket.prototype._read = function(n) {
   }
 };
 
-
-TcpSocket.prototype.setTimeout = function(msecs: number, callback: () => void) {
-  var self = this;
-
-  if (this._timeout) {
-    clearTimeout(this._timeout);
-    this._timeout = null;
+TcpSocket.prototype._activeTimer = function(msecs, wrapper) {
+  if (this._timeout && this._timeout.handle) {
+    clearTimeout(this._timeout.handle);
   }
 
-  if (msecs > 0) {
+  if (!wrapper) {
+    var self = this;
+    wrapper = function() {
+      self._timeout = null;
+      self.emit('timeout');
+    };
+  }
+
+  this._timeout = {
+    handle: setTimeout(wrapper, msecs),
+    wrapper: wrapper,
+    msecs: msecs
+  };
+};
+
+TcpSocket.prototype._clearTimeout = function() {
+  if (this._timeout) {
+    clearTimeout(this._timeout.handle);
+    this._timeout = null;
+  }
+};
+
+TcpSocket.prototype.setTimeout = function(msecs: number, callback: () => void) {
+  if (msecs === 0) {
+    this._clearTimeout();
+    if (callback) {
+      this.removeListener('timeout', callback);
+    }
+  } else {
     if (callback) {
       this.once('timeout', callback);
     }
 
-    var self = this;
-    this._timeout = setTimeout(function() {
-      self.emit('timeout');
-      self._timeout = null;
-      self.destroy();
-    }, msecs);
+    this._activeTimer(msecs);
   }
+
+  return this;
 };
 
 TcpSocket.prototype.address = function() : { port: number, address: string, family: string } {
@@ -209,6 +236,7 @@ TcpSocket.prototype.destroy = function() {
   if (!this._destroyed) {
     this._destroyed = true;
     this._debug('destroying');
+    this._clearTimeout();
 
     Sockets.destroy(this._id);
   }
@@ -268,8 +296,7 @@ TcpSocket.prototype._onData = function(data: string): void {
   this._debug('received', 'data');
 
   if (this._timeout) {
-    clearTimeout(this._timeout);
-    this._timeout = null;
+    this._activeTimer(this._timeout.msecs);
   }
 
   if (data && data.length > 0) {
@@ -335,8 +362,7 @@ TcpSocket.prototype._write = function(buffer: any, encoding: ?String, callback: 
 
   Sockets.write(this._id, str, function(err) {
     if (self._timeout) {
-      clearTimeout(self._timeout);
-      self._timeout = null;
+      self._activeTimer(this._timeout.msecs);
     }
 
     err = normalizeError(err);
