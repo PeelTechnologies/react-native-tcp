@@ -18,6 +18,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     NSMutableDictionary<NSNumber *, RCTResponseSenderBlock> *_pendingSends;
     NSLock *_lock;
     long _sendTag;
+    BOOL _isListening;
 }
 
 - (id)initWithClientId:(NSNumber *)clientID andConfig:(id<SocketClientDelegate>)aDelegate;
@@ -45,6 +46,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         _clientDelegate = aDelegate;
         _pendingSends = [NSMutableDictionary dictionary];
         _lock = [[NSLock alloc] init];
+        _isListening = NO;
         _tcpSocket = tcpSocket;
     }
 
@@ -121,13 +123,13 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     if ([@"0.0.0.0" isEqualToString: host]) {
         host = @"localhost";
     }
-    BOOL result = [_tcpSocket acceptOnInterface:host port:port error:error];
-    if (result == YES) {
+    _isListening = [_tcpSocket acceptOnInterface:host port:port error:error];
+    if (_isListening == YES) {
         [_clientDelegate onConnect: self];
         [_tcpSocket readDataWithTimeout:-1 tag:_id.longValue];
     }
 
-    return result;
+    return _isListening;
 }
 
 - (void)setPendingSend:(RCTResponseSenderBlock)callback forKey:(NSNumber *)key
@@ -188,11 +190,13 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
 - (void)end
 {
+    _isListening = NO;
     [_tcpSocket disconnectAfterWriting];
 }
 
 - (void)destroy
 {
+    _isListening = NO;
     [_tcpSocket disconnect];
 }
 
@@ -231,7 +235,9 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 - (void)socketDidDisconnect:(GCDAsyncSocket *)sock withError:(NSError *)err
 {
     if (!_clientDelegate) return;
-    [_clientDelegate onClose:self withError:(!err || err.code == GCDAsyncSocketClosedError ? nil : err)];
+    if (_isListening == NO) {
+        [_clientDelegate onClose:self withError:(!err || err.code == GCDAsyncSocketClosedError ? nil : err)];
+    }
 }
 
 - (NSError *)badInvocationError:(NSString *)errMsg
