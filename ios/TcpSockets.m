@@ -127,16 +127,20 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
                                                     body:base64String];
 }
 
-- (void)onClose:(TcpSocketClient*) client withError:(NSError *)err
+- (void)onClose:(NSNumber*) clientID withError:(NSError *)err
 {
+    TcpSocketClient* client = [self findClient:clientID];
+    if (!client) {
+        RCTLogError(@"onClose: unrecognized client id %@", clientID)
+    }
+
     if (err) {
-      [self onError:client withError:err];
+        [self onError:client withError:err];
     }
 
     [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-close", client.id]
                                                     body:err == nil ? @NO : @YES];
 
-    client.clientDelegate = nil;
     [_clients removeObjectForKey:client.id];
 }
 
@@ -174,7 +178,6 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
     if (!client) return;
 
     [client destroy];
-    [_clients removeObjectForKey:cId];
 }
 
 -(NSNumber*)getNextId {

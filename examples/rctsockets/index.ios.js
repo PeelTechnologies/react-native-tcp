@@ -48,6 +48,10 @@ class RctSockets extends Component {
       socket.on('error', (error) => {
         this.updateChatter('error ' + error);
       });
+
+      socket.on('close', (error) => {
+        this.updateChatter('server client closed ' + (error ? error : ''));
+      });
     }).listen(serverPort, () => {
       this.updateChatter('opened server on ' + JSON.stringify(server.address()));
     });
