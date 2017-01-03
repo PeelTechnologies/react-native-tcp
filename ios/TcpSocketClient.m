@@ -7,6 +7,7 @@
 #import <arpa/inet.h>
 #import "TcpSocketClient.h"
 #import "RCTBridgeModule.h"
+#import "RCTLog.h"
 #import "GCDAsyncSocket.h"
 
 NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
@@ -18,7 +19,6 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     NSMutableDictionary<NSNumber *, RCTResponseSenderBlock> *_pendingSends;
     NSLock *_lock;
     long _sendTag;
-    BOOL _isListening;
 }
 
 - (id)initWithClientId:(NSNumber *)clientID andConfig:(id<SocketClientDelegate>)aDelegate;
@@ -46,8 +46,8 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
         _clientDelegate = aDelegate;
         _pendingSends = [NSMutableDictionary dictionary];
         _lock = [[NSLock alloc] init];
-        _isListening = NO;
         _tcpSocket = tcpSocket;
+        [_tcpSocket setUserData: clientID];
     }
 
     return self;
@@ -64,6 +64,8 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     }
 
     _tcpSocket = [[GCDAsyncSocket alloc] initWithDelegate:self delegateQueue:[self methodQueue]];
+    [_tcpSocket setUserData: _id];
+
     BOOL result = false;
 
     NSString *localAddress = (options?options[@"localAddress"]:nil);
@@ -118,18 +120,19 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     }
 
     _tcpSocket = [[GCDAsyncSocket alloc] initWithDelegate:self delegateQueue:[self methodQueue]];
+    [_tcpSocket setUserData: _id];
 
     // GCDAsyncSocket doesn't recognize 0.0.0.0
     if ([@"0.0.0.0" isEqualToString: host]) {
         host = @"localhost";
     }
-    _isListening = [_tcpSocket acceptOnInterface:host port:port error:error];
-    if (_isListening == YES) {
+    BOOL isListening = [_tcpSocket acceptOnInterface:host port:port error:error];
+    if (isListening == YES) {
         [_clientDelegate onConnect: self];
         [_tcpSocket readDataWithTimeout:-1 tag:_id.longValue];
     }
 
-    return _isListening;
+    return isListening;
 }
 
 - (void)setPendingSend:(RCTResponseSenderBlock)callback forKey:(NSNumber *)key
@@ -190,18 +193,20 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
 - (void)end
 {
-    _isListening = NO;
     [_tcpSocket disconnectAfterWriting];
 }
 
 - (void)destroy
 {
-    _isListening = NO;
     [_tcpSocket disconnect];
 }
 
 - (void)socket:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag {
-    if (!_clientDelegate) return;
+    if (!_clientDelegate) {
+        RCTLogError(@"didReadData with nil clientDelegate for %@", [sock userData])
+        return;
+    }
+
     [_clientDelegate onData:@(tag) data:data];
 
     [sock readDataWithTimeout:-1 tag:tag];
@@ -219,7 +224,11 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
 - (void)socket:(GCDAsyncSocket *)sock didConnectToHost:(NSString *)host port:(uint16_t)port
 {
-    if (!_clientDelegate) return;
+    if (!_clientDelegate) {
+        RCTLogError(@"didConnectToHost with nil clientDelegate for %@", [sock userData])
+        return;
+    }
+
     [_clientDelegate onConnect:self];
 
     [sock readDataWithTimeout:-1 tag:_id.longValue];
@@ -234,10 +243,12 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
 - (void)socketDidDisconnect:(GCDAsyncSocket *)sock withError:(NSError *)err
 {
-    if (!_clientDelegate) return;
-    if (_isListening == NO) {
-        [_clientDelegate onClose:self withError:(!err || err.code == GCDAsyncSocketClosedError ? nil : err)];
+    if (!_clientDelegate) {
+        RCTLogError(@"socketDidDisconnect with nil clientDelegate for %@", [sock userData])
+        return;
     }
+
+    [_clientDelegate onClose:[sock userData] withError:(!err || err.code == GCDAsyncSocketClosedError ? nil : err)];
 }
 
 - (NSError *)badInvocationError:(NSString *)errMsg
