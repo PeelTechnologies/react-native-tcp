@@ -131,7 +131,7 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
 {
     TcpSocketClient* client = [self findClient:clientID];
     if (!client) {
-        RCTLogError(@"onClose: unrecognized client id %@", clientID)
+        RCTLogError(@"onClose: unrecognized client id %@", clientID);
     }
 
     if (err) {

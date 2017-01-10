@@ -203,7 +203,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
 - (void)socket:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag {
     if (!_clientDelegate) {
-        RCTLogError(@"didReadData with nil clientDelegate for %@", [sock userData])
+        RCTLogError(@"didReadData with nil clientDelegate for %@", [sock userData]);
         return;
     }
 
@@ -225,7 +225,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 - (void)socket:(GCDAsyncSocket *)sock didConnectToHost:(NSString *)host port:(uint16_t)port
 {
     if (!_clientDelegate) {
-        RCTLogError(@"didConnectToHost with nil clientDelegate for %@", [sock userData])
+        RCTLogError(@"didConnectToHost with nil clientDelegate for %@", [sock userData]);
         return;
     }
 
@@ -244,7 +244,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 - (void)socketDidDisconnect:(GCDAsyncSocket *)sock withError:(NSError *)err
 {
     if (!_clientDelegate) {
-        RCTLogError(@"socketDidDisconnect with nil clientDelegate for %@", [sock userData])
+        RCTLogError(@"socketDidDisconnect with nil clientDelegate for %@", [sock userData]);
         return;
     }
 
