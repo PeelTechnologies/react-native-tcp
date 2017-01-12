@@ -24,17 +24,11 @@ react-native link react-native-tcp
 ### Due to limitations in the react-native packager, streams need to be hacked in with [rn-nodeify](https://www.npmjs.com/package/rn-nodeify)
 
 1. install rn-nodeify as a dev-dependency
-```
-npm install --save-dev rn-nodeify
-```
+``` npm install --save-dev rn-nodeify ```
 2. run rn-nodeify manually
-```
-rn-nodeify --install stream,process,util --hack
-```
+``` rn-nodeify --install stream,process,util --hack ```
 3. optionally you can add this as a postinstall script
-```
-"postinstall": "rn-nodeify --install stream,process,util --hack"
-```
+``` "postinstall": "rn-nodeify --install stream,process,util --hack" ```
 
 ## Usage
 
