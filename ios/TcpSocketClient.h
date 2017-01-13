@@ -4,6 +4,7 @@
  */
 
 #import <Foundation/Foundation.h>
+#import "CocoaAsyncSocket/GCDAsyncSocket.h"
 #import "RCTBridgeModule.h"
 
 extern NSString *const RCTTCPErrorDomain;
@@ -35,7 +36,7 @@ typedef enum RCTTCPError RCTTCPError;
 
 @end
 
-@interface TcpSocketClient : NSObject
+@interface TcpSocketClient : NSObject<GCDAsyncSocketDelegate>
 
 @property (nonatomic, retain) NSNumber * id;
 @property (nonatomic, weak) id<SocketClientDelegate> clientDelegate;

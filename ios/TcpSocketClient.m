@@ -8,7 +8,6 @@
 #import "TcpSocketClient.h"
 #import "RCTBridgeModule.h"
 #import "RCTLog.h"
-#import "GCDAsyncSocket.h"
 
 NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
@@ -203,7 +202,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
 - (void)socket:(GCDAsyncSocket *)sock didReadData:(NSData *)data withTag:(long)tag {
     if (!_clientDelegate) {
-        RCTLogError(@"didReadData with nil clientDelegate for %@", [sock userData]);
+        RCTLogWarn(@"didReadData with nil clientDelegate for %@", [sock userData]);
         return;
     }
 
@@ -225,7 +224,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 - (void)socket:(GCDAsyncSocket *)sock didConnectToHost:(NSString *)host port:(uint16_t)port
 {
     if (!_clientDelegate) {
-        RCTLogError(@"didConnectToHost with nil clientDelegate for %@", [sock userData]);
+        RCTLogWarn(@"didConnectToHost with nil clientDelegate for %@", [sock userData]);
         return;
     }
 
@@ -244,7 +243,7 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 - (void)socketDidDisconnect:(GCDAsyncSocket *)sock withError:(NSError *)err
 {
     if (!_clientDelegate) {
-        RCTLogError(@"socketDidDisconnect with nil clientDelegate for %@", [sock userData]);
+        RCTLogWarn(@"socketDidDisconnect with nil clientDelegate for %@", [sock userData]);
         return;
     }
 
