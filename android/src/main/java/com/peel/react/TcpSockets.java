@@ -35,8 +35,11 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
     private boolean mShuttingDown = false;
     private TcpSocketManager socketManager;
 
+    private ReactContext mReactContext;
+
     public TcpSockets(ReactApplicationContext reactContext) {
         super(reactContext);
+        mReactContext = reactContext;
 
         try {
             socketManager = new TcpSocketManager(this);
@@ -71,6 +74,12 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
         } catch (ExecutionException ee) {
             FLog.e(TAG, "onCatalystInstanceDestroy", ee);
         }
+    }
+
+    private void sendEvent(String eventName, WritableMap params) {
+        mReactContext
+            .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
+            .emit(eventName, params);
     }
 
     @ReactMethod
@@ -146,19 +155,20 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
             return;
         }
         WritableMap eventParams = Arguments.createMap();
-        eventParams.putInt("id", clientId);
+        eventParams.putInt("id", serverId);
+
+        WritableMap infoParams = Arguments.createMap();
+        infoParams.putInt("id", clientId);
 
         WritableMap addressParams = Arguments.createMap();
         addressParams.putString("address", socketAddress.getHostName());
         addressParams.putInt("port", socketAddress.getPort());
         addressParams.putString("family", socketAddress.getAddress() instanceof Inet6Address ? "IPv6" : "IPv4");
 
-        eventParams.putMap("address", addressParams);
+        infoParams.putMap("address", addressParams);
+        eventParams.putMap("info", infoParams);
 
-        ReactContext reactContext = TcpSockets.this.getReactApplicationContext();
-        reactContext
-                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                .emit("tcp-" + serverId + "-connection", eventParams);
+        sendEvent("connection", eventParams);
     }
 
     @Override
@@ -167,14 +177,16 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
             return;
         }
         WritableMap eventParams = Arguments.createMap();
-        eventParams.putString("address", address.getHostName());
-        eventParams.putInt("port", address.getPort());
-        eventParams.putString("family", address.getAddress() instanceof Inet6Address ? "IPv6" : "IPv4");
+        eventParams.putInt("id", id);
 
-        ReactContext reactContext = TcpSockets.this.getReactApplicationContext();
-        reactContext
-                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                .emit("tcp-" + id + "-connect", eventParams);
+        WritableMap addressParams = Arguments.createMap();
+        addressParams.putString("address", address.getHostName());
+        addressParams.putInt("port", address.getPort());
+        addressParams.putString("family", address.getAddress() instanceof Inet6Address ? "IPv6" : "IPv4");
+
+        eventParams.putMap("address", addressParams);
+
+        sendEvent("connect", eventParams);
     }
 
     @Override
@@ -182,10 +194,11 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
         if (mShuttingDown) {
             return;
         }
-        ReactContext reactContext = TcpSockets.this.getReactApplicationContext();
-        reactContext
-                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                .emit("tcp-" + id + "-data", Base64.encodeToString(data, Base64.NO_WRAP));
+        WritableMap eventParams = Arguments.createMap();
+        eventParams.putInt("id", id);
+        eventParams.putString("data", Base64.encodeToString(data, Base64.NO_WRAP));
+
+        sendEvent("data", eventParams);
     }
 
     @Override
@@ -197,10 +210,11 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
             onError(id, error);
         }
 
-        ReactContext reactContext = TcpSockets.this.getReactApplicationContext();
-        reactContext
-                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                .emit("tcp-" + id + "-close", error != null);
+        WritableMap eventParams = Arguments.createMap();
+        eventParams.putInt("id", id);
+        eventParams.putBoolean("hadError", error != null);
+
+        sendEvent("close", eventParams);
     }
 
     @Override
@@ -208,9 +222,11 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
         if (mShuttingDown) {
             return;
         }
-        ReactContext reactContext = TcpSockets.this.getReactApplicationContext();
-        reactContext
-                .getJSModule(DeviceEventManagerModule.RCTDeviceEventEmitter.class)
-                .emit("tcp-" + id + "-error", error);
+
+        WritableMap eventParams = Arguments.createMap();
+        eventParams.putInt("id", id);
+        eventParams.putString("error", error);
+
+        sendEvent("error", eventParams);
     }
 }

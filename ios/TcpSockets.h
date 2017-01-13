@@ -5,12 +5,11 @@
 
 #import <Foundation/Foundation.h>
 #import <Availability.h>
-#import "GCDAsyncSocket.h"
-#import "TcpSocketClient.h"
+#import "CocoaAsyncSocket/GCDAsyncSocket.h"
 #import "RCTBridgeModule.h"
-#import "RCTBridge.h"
-#import "RCTEventDispatcher.h"
+#import "TcpSocketClient.h"
+#import "RCTEventEmitter.h"
 
-@interface TcpSockets : NSObject<SocketClientDelegate, RCTBridgeModule>
+@interface TcpSockets : RCTEventEmitter<SocketClientDelegate>
 
 @end

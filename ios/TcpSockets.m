@@ -4,9 +4,8 @@
  */
 
 #import "RCTAssert.h"
-#import "RCTBridge.h"
-#import "RCTConvert.h"
 #import "RCTEventDispatcher.h"
+#import "RCTConvert.h"
 #import "RCTLog.h"
 #import "TcpSockets.h"
 #import "TcpSocketClient.h"
@@ -22,7 +21,22 @@
 
 RCT_EXPORT_MODULE()
 
-@synthesize bridge = _bridge;
+- (NSArray<NSString *> *)supportedEvents
+{
+    return @[@"connect",
+             @"connection",
+             @"data",
+             @"close",
+             @"error"];
+}
+
+- (void)startObserving {
+    // Does nothing
+}
+
+- (void)stopObserving {
+    // Does nothing
+}
 
 -(void)dealloc
 {
@@ -34,7 +48,7 @@ RCT_EXPORT_MODULE()
 - (TcpSocketClient *)createSocket:(nonnull NSNumber*)cId
 {
     if (!cId) {
-        RCTLogError(@"%@.createSocket called with nil id parameter.", [self class]);
+        RCTLogWarn(@"%@.createSocket called with nil id parameter.", [self class]);
         return nil;
     }
 
@@ -43,7 +57,7 @@ RCT_EXPORT_MODULE()
     }
 
     if (_clients[cId]) {
-        RCTLogError(@"%@.createSocket called twice with the same id.", [self class]);
+        RCTLogWarn(@"%@.createSocket called twice with the same id.", [self class]);
         return nil;
     }
 
@@ -109,45 +123,45 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
 
 - (void)onConnect:(TcpSocketClient*) client
 {
-    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-connect", client.id]
-                                                    body:[client getAddress]];
+    [self sendEventWithName:@"connect"
+                       body:@{ @"id": client.id, @"address" : [client getAddress] }];
 }
 
 -(void)onConnection:(TcpSocketClient *)client toClient:(NSNumber *)clientID {
     _clients[client.id] = client;
 
-    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-connection", clientID]
-                                                    body:@{ @"id": client.id, @"address" : [client getAddress] }];
+    [self sendEventWithName:@"connection"
+                       body:@{ @"id": clientID, @"info": @{ @"id": client.id, @"address" : [client getAddress] } }];
 }
 
 - (void)onData:(NSNumber *)clientID data:(NSData *)data
 {
     NSString *base64String = [data base64EncodedStringWithOptions:0];
-    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-data", clientID]
-                                                    body:base64String];
+    [self sendEventWithName:@"data"
+                       body:@{ @"id": clientID, @"data" : base64String }];
 }
 
 - (void)onClose:(NSNumber*) clientID withError:(NSError *)err
 {
     TcpSocketClient* client = [self findClient:clientID];
     if (!client) {
-        RCTLogError(@"onClose: unrecognized client id %@", clientID);
+        RCTLogWarn(@"onClose: unrecognized client id %@", clientID);
     }
 
     if (err) {
         [self onError:client withError:err];
     }
 
-    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-close", client.id]
-                                                    body:err == nil ? @NO : @YES];
+    [self sendEventWithName:@"close"
+                       body:@{ @"id": clientID, @"hadError": err == nil ? @NO : @YES }];
 
-    [_clients removeObjectForKey:client.id];
+    [_clients removeObjectForKey:clientID];
 }
 
 - (void)onError:(TcpSocketClient*) client withError:(NSError *)err {
     NSString *msg = err.localizedFailureReason ?: err.localizedDescription;
-    [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-error", client.id]
-                                                    body:msg];
+    [self sendEventWithName:@"error"
+                       body:@{ @"id": client.id, @"error": msg }];
 
 }
 
@@ -156,8 +170,9 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
     TcpSocketClient *client = _clients[cId];
     if (!client) {
         NSString *msg = [NSString stringWithFormat:@"no client found with id %@", cId];
-        [self.bridge.eventDispatcher sendDeviceEventWithName:[NSString stringWithFormat:@"tcp-%@-error", cId]
-                                                        body:msg];
+        [self sendEventWithName:@"error"
+                           body:@{ @"id": cId, @"error": msg }];
+
         return nil;
     }
 

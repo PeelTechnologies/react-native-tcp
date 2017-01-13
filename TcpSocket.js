@@ -16,7 +16,7 @@ var stream = require('stream-browserify');
 // var EventEmitter = require('events').EventEmitter;
 var ipRegex = require('ip-regex');
 var {
-  DeviceEventEmitter,
+  NativeEventEmitter,
   NativeModules
 } = require('react-native');
 var Sockets = NativeModules.TcpSockets;
@@ -47,6 +47,7 @@ function TcpSocket(options: ?{ id: ?number }) {
     this._id = instances++;
   }
 
+  this._eventEmitter = new NativeEventEmitter(Sockets);
   stream.Duplex.call(this, {});
 
   // ensure compatibility with node's EventEmitter
@@ -248,28 +249,41 @@ TcpSocket.prototype._registerEvents = function(): void {
   }
 
   this._subs = [
-    DeviceEventEmitter.addListener(
-      'tcp-' + this._id + '-connect', this._onConnect.bind(this)
-    ),
-    DeviceEventEmitter.addListener(
-      'tcp-' + this._id + '-connection', this._onConnection.bind(this)
-    ),
-    DeviceEventEmitter.addListener(
-      'tcp-' + this._id + '-data', this._onData.bind(this)
-    ),
-    DeviceEventEmitter.addListener(
-      'tcp-' + this._id + '-close', this._onClose.bind(this)
-    ),
-    DeviceEventEmitter.addListener(
-      'tcp-' + this._id + '-error', this._onError.bind(this)
-    )
+    this._eventEmitter.addListener('connect', ev => {
+      if (this._id !== ev.id) {
+        return;
+      }
+      this._onConnect(ev.address);
+    }),
+    this._eventEmitter.addListener('connection', ev => {
+      if (this._id !== ev.id) {
+        return;
+      }
+      this._onConnection(ev.info);
+    }),
+    this._eventEmitter.addListener('data', ev => {
+      if (this._id !== ev.id) {
+        return;
+      }
+      this._onData(ev.data);
+    }),
+    this._eventEmitter.addListener('close', ev => {
+      if (this._id !== ev.id) {
+        return;
+      }
+      this._onClose(ev.hadError);
+    }),
+    this._eventEmitter.addListener('error', ev => {
+      if (this._id !== ev.id) {
+        return;
+      }
+      this._onError(ev.error);
+    })
   ];
 };
 
 TcpSocket.prototype._unregisterEvents = function(): void {
-  this._subs.forEach(function(listener) {
-    listener.remove();
-  });
+  this._subs.forEach(e => e.remove());
   this._subs = [];
 };
 
