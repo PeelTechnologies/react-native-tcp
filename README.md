@@ -9,8 +9,14 @@ This module is used by [Peel](http://www.peel.com/)
 * Create a new react-native project. [Check react-native getting started](http://facebook.github.io/react-native/docs/getting-started.html#content)
 
 * In your project dir:
+
 ```
-npm install --save react-native-tcp
+npm install react-native-tcp --save
+```
+
+__Note for iOS:__ If your react-native version < 0.40 install with this tag instead:
+```
+npm install react-native-tcp@3.1.0 --save
 ```
 
 ## Link in the native dependency
