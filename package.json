@@ -32,6 +32,9 @@
     "url": "https://github.com/PeelTechnologies/react-native-tcp/issues"
   },
   "homepage": "https://github.com/PeelTechnologies/react-native-tcp",
+  "peerDependencies": {
+    "react-native": ">=0.40.0"
+  },
   "dependencies": {
     "base64-js": "0.0.8",
     "buffer": "^5.0.0",

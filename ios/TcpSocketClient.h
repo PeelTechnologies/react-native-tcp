@@ -3,9 +3,8 @@
  * All rights reserved.
  */
 
-#import <Foundation/Foundation.h>
+#import <React/RCTBridgeModule.h>
 #import "CocoaAsyncSocket/GCDAsyncSocket.h"
-#import "RCTBridgeModule.h"
 
 extern NSString *const RCTTCPErrorDomain;
 
