@@ -129,4 +129,4 @@ const styles = StyleSheet.create({
   },
 });
 
-AppRegistry.registerComponent('RctSockets', () => RctSockets);
+AppRegistry.registerComponent('rctsockets', () => RctSockets);

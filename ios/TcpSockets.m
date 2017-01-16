@@ -3,10 +3,11 @@
  * All rights reserved.
  */
 
-#import "RCTAssert.h"
-#import "RCTEventDispatcher.h"
-#import "RCTConvert.h"
-#import "RCTLog.h"
+#import <React/RCTAssert.h>
+#import <React/RCTEventDispatcher.h>
+#import <React/RCTConvert.h>
+#import <React/RCTLog.h>
+
 #import "TcpSockets.h"
 #import "TcpSocketClient.h"
 

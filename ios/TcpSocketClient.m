@@ -6,8 +6,8 @@
 #import <netinet/in.h>
 #import <arpa/inet.h>
 #import "TcpSocketClient.h"
-#import "RCTBridgeModule.h"
-#import "RCTLog.h"
+
+#import <React/RCTLog.h>
 
 NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 
