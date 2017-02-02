@@ -442,6 +442,8 @@ TcpSocket.prototype.ref =
 TcpSocket.prototype.unref =
 TcpSocket.prototype.setNoDelay =
 TcpSocket.prototype.setKeepAlive =
-TcpSocket.prototype.setEncoding = function() { /* nop */ };
+TcpSocket.prototype.setEncoding = function() {
+  throw new Error('Unimplemented net.socket api.'); 
+};
 
 module.exports = TcpSocket;
