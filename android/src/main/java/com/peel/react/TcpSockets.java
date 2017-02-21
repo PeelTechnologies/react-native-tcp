@@ -21,6 +21,7 @@ import com.facebook.react.bridge.WritableMap;
 import com.facebook.react.modules.core.DeviceEventManagerModule;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.Inet6Address;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
@@ -160,10 +161,12 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
         WritableMap infoParams = Arguments.createMap();
         infoParams.putInt("id", clientId);
 
+        final InetAddress address = socketAddress.getAddress();
+
         WritableMap addressParams = Arguments.createMap();
-        addressParams.putString("address", socketAddress.getHostName());
+        addressParams.putString("address", address.getHostAddress());
         addressParams.putInt("port", socketAddress.getPort());
-        addressParams.putString("family", socketAddress.getAddress() instanceof Inet6Address ? "IPv6" : "IPv4");
+        addressParams.putString("family", address instanceof Inet6Address ? "IPv6" : "IPv4");
 
         infoParams.putMap("address", addressParams);
         eventParams.putMap("info", infoParams);
@@ -172,17 +175,19 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
     }
 
     @Override
-    public void onConnect(Integer id, InetSocketAddress address) {
+    public void onConnect(Integer id, InetSocketAddress socketAddress) {
         if (mShuttingDown) {
             return;
         }
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", id);
 
+        final InetAddress address = socketAddress.getAddress();
+
         WritableMap addressParams = Arguments.createMap();
-        addressParams.putString("address", address.getHostName());
-        addressParams.putInt("port", address.getPort());
-        addressParams.putString("family", address.getAddress() instanceof Inet6Address ? "IPv6" : "IPv4");
+        addressParams.putString("address", address.getHostAddress());
+        addressParams.putInt("port", socketAddress.getPort());
+        addressParams.putString("family", address instanceof Inet6Address ? "IPv6" : "IPv4");
 
         eventParams.putMap("address", addressParams);
 
