@@ -1,6 +1,6 @@
 {
   "name": "react-native-tcp",
-  "version": "3.2.0",
+  "version": "3.2.1",
   "description": "node's net API for react-native",
   "main": "TcpSockets.js",
   "scripts": {
