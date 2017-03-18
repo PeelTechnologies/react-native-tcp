@@ -114,7 +114,11 @@ TcpSocket.prototype.connect = function(options, callback) : TcpSocket {
   }
 
   if (options.timeout) {
-    this.setTimeout(options.timeout);
+    this.setTimeout(options.timeout, () => {
+      if (this._state === STATE.CONNECTING) {
+        Sockets.cancel(this._id);
+      }
+    });
   } else if (this._timeout) {
     this._activeTimer(this._timeout.msecs);
   }

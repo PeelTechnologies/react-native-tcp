@@ -14,6 +14,7 @@ import com.koushikdutta.async.callback.CompletedCallback;
 import com.koushikdutta.async.callback.ConnectCallback;
 import com.koushikdutta.async.callback.DataCallback;
 import com.koushikdutta.async.callback.ListenCallback;
+import com.koushikdutta.async.future.Cancellable;
 
 import java.io.IOException;
 import java.lang.ref.WeakReference;
@@ -26,6 +27,7 @@ import java.net.UnknownHostException;
  */
 public final class TcpSocketManager {
     private SparseArray<Object> mClients = new SparseArray<Object>();
+    private SparseArray<Cancellable> mConnectingClients = new SparseArray<Cancellable>();
 
     private WeakReference<TcpSocketListener> mListener;
     private AsyncServer mServer = AsyncServer.getDefault();
@@ -128,7 +130,7 @@ public final class TcpSocketManager {
             socketAddress = new InetSocketAddress(port);
         }
 
-        mServer.connectSocket(socketAddress, new ConnectCallback() {
+        Cancellable cancel = mServer.connectSocket(socketAddress, new ConnectCallback() {
             @Override
             public void onConnectCompleted(Exception ex, AsyncSocket socket) {
               TcpSocketListener listener = mListener.get();
@@ -144,6 +146,8 @@ public final class TcpSocketManager {
                 }
             }
         });
+
+        mConnectingClients.put(cId, cancel);
     }
 
     public void write(final Integer cId, final byte[] data) {
@@ -166,6 +170,14 @@ public final class TcpSocketManager {
             if (listener != null) {
                listener.onError(cId, "unable to find socket");
             }
+        }
+    }
+
+    public void cancel(final Integer cId) {
+        Cancellable cancel = mConnectingClients.get(cId);
+        if (cancel != null) {
+            cancel.cancel();
+            mConnectingClients.remove(cId);
         }
     }
 

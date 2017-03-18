@@ -121,6 +121,17 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
     }
 
     @ReactMethod
+    public void cancel(final Integer cId) {
+        new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
+            @Override
+            protected void doInBackgroundGuarded(Void... params) {
+                socketManager.cancel(cId);
+                onError(cId, "Connection timeout");
+            }
+        }.execute();
+    }
+
+    @ReactMethod
     public void write(final Integer cId, final String base64String, final Callback callback) {
         new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
             @Override
