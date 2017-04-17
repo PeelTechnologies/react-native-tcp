@@ -214,9 +214,9 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
     public void retrieveLastData(Integer id) {
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", id);
-        eventParams.putString("lastdata", lastData);
+        eventParams.putString("data", lastData);
 
-        sendEvent("lastdata", eventParams);
+        sendEvent("data", eventParams);
     }
 
     @Override
