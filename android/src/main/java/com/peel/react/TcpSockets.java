@@ -34,6 +34,8 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
     private static final String TAG = "TcpSockets";
 
     private boolean mShuttingDown = false;
+    private boolean dataReceiverMode = false;
+    private String lastData = "";
     private TcpSocketManager socketManager;
 
     private ReactContext mReactContext;
@@ -106,7 +108,10 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
         new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
             @Override
             protected void doInBackgroundGuarded(Void... params) {
-                // NOTE : ignoring options for now, just use the available interface.
+                if (options.getBoolean("dataReceiverMode")) {
+                    dataReceiverMode = true;
+                }
+
                 try {
                     socketManager.connect(cId, host, port);
                 } catch (UnknownHostException uhe) {
@@ -205,11 +210,26 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
         sendEvent("connect", eventParams);
     }
 
+    @ReactMethod
+    public void retrieveLastData(Integer id) {
+        WritableMap eventParams = Arguments.createMap();
+        eventParams.putInt("id", id);
+        eventParams.putString("lastdata", lastData);
+
+        sendEvent("lastdata", eventParams);
+    }
+
     @Override
     public void onData(Integer id, byte[] data) {
         if (mShuttingDown) {
             return;
         }
+
+        if (dataReceiverMode) {
+            lastData = Base64.encodeToString(data, Base64.NO_WRAP);
+            return;
+        }
+
         WritableMap eventParams = Arguments.createMap();
         eventParams.putInt("id", id);
         eventParams.putString("data", Base64.encodeToString(data, Base64.NO_WRAP));

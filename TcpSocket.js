@@ -247,6 +247,10 @@ TcpSocket.prototype.destroy = function() {
   }
 };
 
+TcpSocket.prototype.retrieveLastData = function () {
+  Sockets.retrieveLastData(this._id);
+};
+
 TcpSocket.prototype._registerEvents = function(): void {
   if (this._subs && this._subs.length > 0) {
     return;
@@ -270,6 +274,12 @@ TcpSocket.prototype._registerEvents = function(): void {
         return;
       }
       this._onData(ev.data);
+    }),
+    this._eventEmitter.addListener('lastdata', ev => {
+      if (this._id !== ev.id) {
+        return;
+      }
+      this._onLastData(ev.lastdata);
     }),
     this._eventEmitter.addListener('close', ev => {
       if (this._id !== ev.id) {
@@ -312,6 +322,37 @@ TcpSocket.prototype._onConnection = function(info: { id: number, address: { port
 
 TcpSocket.prototype._onData = function(data: string): void {
   this._debug('received', 'data');
+
+  if (this._options && this._options.timeout) {
+    this._clearTimeout();
+
+    this.setTimeout(this._options.timeout, () => {
+      Sockets.destroy(this._id);
+    });
+  } else if (this._timeout) {
+    this._activeTimer(this._timeout.msecs);
+  }
+
+  if (data && data.length > 0) {
+    // debug('got data');
+
+    // read success.
+    // In theory (and in practice) calling readStop right now
+    // will prevent this from being called again until _read() gets
+    // called again.
+
+    var ret = this.push(new Buffer(data, 'base64'));
+    if (this._reading && !ret) {
+      this._reading = false;
+      this.pause();
+    }
+
+    return;
+  }
+};
+
+TcpSocket.prototype._onLastData = function(data: string): void {
+  this._debug('received', 'lastdata');
 
   if (this._options && this._options.timeout) {
     this._clearTimeout();
