@@ -200,7 +200,7 @@ TcpSocket.prototype.setTimeout = function(msecs: number, callback: () => void) {
       this.once('timeout', callback);
     }
 
-    this._activeTimer(msecs);
+    this.(this(msecs);
   }
 
   return this;
@@ -376,7 +376,7 @@ TcpSocket.prototype._write = function(buffer: any, encoding: ?String, callback: 
 
   Sockets.write(this._id, str, function(err) {
     if (self._timeout) {
-      self._activeTimer(this._timeout.msecs);
+      self._activeTimer(self._timeout.msecs);
     }
 
     err = normalizeError(err);
