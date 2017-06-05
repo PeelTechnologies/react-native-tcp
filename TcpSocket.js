@@ -376,7 +376,7 @@ TcpSocket.prototype._write = function(buffer: any, encoding: ?String, callback: 
 
   Sockets.write(this._id, str, function(err) {
     if (self._timeout) {
-      self._activeTimer(this._timeout.msecs);
+      self._activeTimer(self._timeout.msecs);
     }
 
     err = normalizeError(err);
