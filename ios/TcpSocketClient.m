@@ -180,10 +180,10 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 - (void) writeData:(NSData *)data
           callback:(RCTResponseSenderBlock)callback
 {
-    [_tcpSocket writeData:data withTimeout:-1 tag:_sendTag];
     if (callback) {
         [self setPendingSend:callback forKey:@(_sendTag)];
     }
+    [_tcpSocket writeData:data withTimeout:-1 tag:_sendTag];
 
     _sendTag++;
 
