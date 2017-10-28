@@ -78,10 +78,6 @@ client.on('data', function(data) {
 
 add select tests from node's tests for net
 
-## Contributors
-
-[Andy Prock](https://github.com/aprock)  
-
 PR's welcome!
 
 
