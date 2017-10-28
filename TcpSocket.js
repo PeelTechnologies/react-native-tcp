@@ -42,6 +42,8 @@ function TcpSocket(options: ?{ id: ?number }) {
     if (this._id <= instances) {
       throw new Error('Socket id ' + this._id + 'already in use');
     }
+
+    this._options = options;
   } else {
     // javascript generated sockets range from 1-1000
     this._id = instances++;
@@ -84,6 +86,8 @@ TcpSocket.prototype.connect = function(options, callback) : TcpSocket {
     return TcpSocket.prototype.connect.apply(this, args);
   }
 
+  this._options = options;
+
   if (typeof callback === 'function') {
     this.once('connect', callback);
   }
@@ -114,7 +118,11 @@ TcpSocket.prototype.connect = function(options, callback) : TcpSocket {
   }
 
   if (options.timeout) {
-    this.setTimeout(options.timeout);
+    this.setTimeout(options.timeout, () => {
+      if (this._state === STATE.CONNECTING) {
+        Sockets.cancel(this._id);
+      }
+    });
   } else if (this._timeout) {
     this._activeTimer(this._timeout.msecs);
   }
@@ -196,11 +204,7 @@ TcpSocket.prototype.setTimeout = function(msecs: number, callback: () => void) {
       this.removeListener('timeout', callback);
     }
   } else {
-    if (callback) {
-      this.once('timeout', callback);
-    }
-
-    this._activeTimer(msecs);
+    this._activeTimer(msecs, callback);
   }
 
   return this;
@@ -241,6 +245,10 @@ TcpSocket.prototype.destroy = function() {
 
     Sockets.destroy(this._id);
   }
+};
+
+TcpSocket.prototype.retrieveLastData = function () {
+  Sockets.retrieveLastData(this._id);
 };
 
 TcpSocket.prototype._registerEvents = function(): void {
@@ -309,7 +317,13 @@ TcpSocket.prototype._onConnection = function(info: { id: number, address: { port
 TcpSocket.prototype._onData = function(data: string): void {
   this._debug('received', 'data');
 
-  if (this._timeout) {
+  if (this._options && this._options.timeout) {
+    this._clearTimeout();
+
+    this.setTimeout(this._options.timeout, () => {
+      Sockets.destroy(this._id);
+    });
+  } else if (this._timeout) {
     this._activeTimer(this._timeout.msecs);
   }
 
