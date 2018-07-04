@@ -3,6 +3,9 @@ package com.peel.react;
 import android.support.annotation.Nullable;
 import android.util.SparseArray;
 
+import com.facebook.common.logging.FLog;
+
+import com.koushikdutta.async.future.Cancellable;
 import com.koushikdutta.async.AsyncNetworkSocket;
 import com.koushikdutta.async.AsyncServer;
 import com.koushikdutta.async.AsyncServerSocket;
@@ -25,6 +28,8 @@ import java.net.UnknownHostException;
  * Created by aprock on 12/29/15.
  */
 public final class TcpSocketManager {
+    private static final String TAG = "TcpSockets";
+
     private SparseArray<Object> mClients = new SparseArray<Object>();
 
     private WeakReference<TcpSocketListener> mListener;
@@ -119,31 +124,67 @@ public final class TcpSocketManager {
         });
     }
 
-    public void connect(final Integer cId, final @Nullable String host, final Integer port) throws UnknownHostException, IOException {
-        // resolve the address
-        final InetSocketAddress socketAddress;
-        if (host != null) {
-            socketAddress = new InetSocketAddress(InetAddress.getByName(host), port);
-        } else {
-            socketAddress = new InetSocketAddress(port);
-        }
+    class TimeoutConnect {
+        private Object mTimeout;
+        private Cancellable mConnection;
 
-        mServer.connectSocket(socketAddress, new ConnectCallback() {
-            @Override
-            public void onConnectCompleted(Exception ex, AsyncSocket socket) {
-              TcpSocketListener listener = mListener.get();
-                if (ex == null) {
-                    mClients.put(cId, socket);
-                    setSocketCallbacks(cId, socket);
-
-                    if (listener != null) {
-                        listener.onConnect(cId, socketAddress);
-                    }
-                } else if (listener != null) {
-                   listener.onError(cId, ex.getMessage());
-                }
+        void connect(final Integer cId, final @Nullable String host, final Integer port) throws UnknownHostException, IOException {
+            // resolve the address
+            final InetSocketAddress socketAddress;
+            if (host != null) {
+                socketAddress = new InetSocketAddress(InetAddress.getByName(host), port);
+            } else {
+                socketAddress = new InetSocketAddress(port);
             }
-        });
+
+            FLog.w(TAG, "Connecting " + host + ":" + port + " " + socketAddress.isUnresolved());
+
+            Runnable timeoutHandler = new Runnable() {
+                @Override
+                public void run() {
+                    TcpSocketListener listener = mListener.get();
+                    if (mConnection != null) {
+                        mConnection.cancel();
+                        mConnection = null;
+                        listener.onError(cId, "Timeout");
+                        FLog.w(TAG, "Timeout " + host + ":" + port);
+                    }
+                    else {
+                        FLog.w(TAG, "Timeout ignored " + host + ":" + port);
+                    }
+                }
+            };
+
+            ConnectCallback connectCallback =  new ConnectCallback() {
+                @Override
+                public void onConnectCompleted(Exception ex, AsyncSocket socket) {
+                TcpSocketListener listener = mListener.get();
+                    if (ex == null) {
+                        FLog.w(TAG, "Connected");
+                        mClients.put(cId, socket);
+                        setSocketCallbacks(cId, socket);
+
+                        if (listener != null) {
+                            listener.onConnect(cId, socketAddress);
+                        }
+                    } else if (listener != null) {
+                        FLog.e(TAG, "Connecting Error", ex);
+                        listener.onError(cId, ex.getMessage());
+                    }
+                    if (mTimeout != null) {
+                        mServer.removeAllCallbacks(mTimeout);
+                        mTimeout = null;
+                    }
+                }
+            };
+
+            mConnection = mServer.connectSocket(socketAddress, connectCallback);
+            mTimeout = mServer.postDelayed(timeoutHandler, 5000);
+        }
+    }
+
+    public void connect(final Integer cId, final @Nullable String host, final Integer port) throws UnknownHostException, IOException {
+        new TimeoutConnect().connect(cId, host, port);
     }
 
     public void write(final Integer cId, final byte[] data) {
