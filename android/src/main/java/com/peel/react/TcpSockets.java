@@ -24,6 +24,8 @@ import java.io.IOException;
 import java.net.InetAddress;
 import java.net.Inet6Address;
 import java.net.InetSocketAddress;
+import android.net.LocalSocket;
+import android.net.LocalSocketAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.ExecutionException;
 
@@ -121,6 +123,23 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
     }
 
     @ReactMethod
+    public void connectIPC(final Integer cId, final String path) {
+        new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
+            @Override
+            protected void doInBackgroundGuarded(Void... params) {
+                // NOTE : ignoring options for now, just use the available interface.
+                try {
+                    socketManager.connectIPC(cId, path);
+                }  catch (IOException ioe) {
+                    FLog.e(TAG, "connect", ioe);
+                    onError(cId, ioe.getMessage());
+                }
+
+            }
+        }.execute();
+    }
+
+    @ReactMethod
     public void write(final Integer cId, final String base64String, final Callback callback) {
         new GuardedAsyncTask<Void, Void>(getReactApplicationContext()) {
             @Override
@@ -188,6 +207,22 @@ public final class TcpSockets extends ReactContextBaseJavaModule implements TcpS
         addressParams.putString("address", address.getHostAddress());
         addressParams.putInt("port", socketAddress.getPort());
         addressParams.putString("family", address instanceof Inet6Address ? "IPv6" : "IPv4");
+
+        eventParams.putMap("address", addressParams);
+
+        sendEvent("connect", eventParams);
+    }
+
+    @Override
+    public void onConnect(Integer id, LocalSocketAddress socketAddress) {
+        if (mShuttingDown) {
+            return;
+        }
+        WritableMap eventParams = Arguments.createMap();
+        eventParams.putInt("id", id);
+
+        WritableMap addressParams = Arguments.createMap();
+        addressParams.putString("path", socketAddress.getName());
 
         eventParams.putMap("address", addressParams);
 
