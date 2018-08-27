@@ -16,7 +16,7 @@ import com.koushikdutta.async.callback.ConnectCallback;
 import com.koushikdutta.async.callback.DataCallback;
 import com.koushikdutta.async.callback.ListenCallback;
 
-import java.io.BufferedInputStream;
+import java.io.InputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.InetAddress;
