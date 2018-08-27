@@ -175,10 +175,10 @@ public final class TcpSocketManager {
                     Object socket = mClients.get(cId);
                     if (socket != null && socket instanceof LocalSocket) {
                         LocalSocket localSocket = (LocalSocket)socket;
-                        BufferedInputStream bufferedInputStream = new BufferedInputStream(localSocket.getInputStream());
-                        while (bufferedInputStream.available() > 0) {
-                            byte[] targetArray = new byte[bufferedInputStream.available()];
-                            bufferedInputStream.read(targetArray);
+                        InputStream inputStream = localSocket.getInputStream();
+                        while (inputStream.available() > 0) {
+                            byte[] targetArray = new byte[inputStream.available()];
+                            inputStream.read(targetArray);
                             TcpSocketListener listener = mListener.get();
                             if (listener != null) {
                                 listener.onData(cId, targetArray);
@@ -186,7 +186,7 @@ public final class TcpSocketManager {
                         }
                     }
                 } catch (IOException e) {
-                    TcpSocketListener listener = mListener.get();
+                    TcpSocketListener listener = mListener.ge dt();
                     if (listener != null) {
                         listener.onError(cId, e.getMessage());
                     }
