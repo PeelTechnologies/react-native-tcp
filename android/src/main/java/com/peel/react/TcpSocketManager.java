@@ -186,7 +186,7 @@ public final class TcpSocketManager {
                         }
                     }
                 } catch (IOException e) {
-                    TcpSocketListener listener = mListener.ge dt();
+                    TcpSocketListener listener = mListener.get();
                     if (listener != null) {
                         listener.onError(cId, e.getMessage());
                     }
