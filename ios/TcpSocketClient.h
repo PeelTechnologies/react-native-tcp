@@ -31,6 +31,10 @@ typedef enum RCTTCPError RCTTCPError;
 - (void)onData:(NSNumber *)clientID data:(NSData *)data;
 - (void)onClose:(TcpSocketClient*)client withError:(NSError *)err;
 - (void)onError:(TcpSocketClient*)client withError:(NSError *)err;
+- (NSNumber*)getNextTag;
+- (void)setPendingSend:(RCTResponseSenderBlock)callback forKey:(NSNumber *)key;
+- (RCTResponseSenderBlock)getPendingSend:(NSNumber *)key;
+- (void)dropPendingSend:(NSNumber *)key;
 - (NSNumber*)getNextId;
 
 @end
