@@ -8,7 +8,11 @@
 
 'use strict';
 
-global.process = require('process'); // needed to make stream-browserify happy
+// if global.process does not have nextTick, redefine global.process.
+if(!(global.process && global.process.nextTick)){
+  global.process = require('process'); // needed to make stream-browserify happy
+}
+
 var Buffer = global.Buffer = global.Buffer || require('buffer').Buffer;
 
 var util = require('util');
@@ -69,7 +73,7 @@ TcpSocket.prototype._debug = function() {
   if (__DEV__) {
     var args = [].slice.call(arguments);
     args.unshift('socket-' + this._id);
-    console.log.apply(console, args);
+    //console.log.apply(console, args);
   }
 };
 
