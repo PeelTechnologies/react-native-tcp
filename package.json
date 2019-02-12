@@ -1,5 +1,5 @@
 {
-  "name": "react-native-tcp",
+  "name": "@hirurgo/react-native-tcp",
   "version": "3.3.0",
   "description": "node's net API for react-native",
   "main": "TcpSockets.js",
