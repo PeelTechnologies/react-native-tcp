@@ -157,6 +157,7 @@ public final class TcpSocketManager {
         Object socket = mClients.get(cId);
         if (socket != null) {
             if (socket instanceof AsyncSocket) {
+                ((AsyncSocket) socket).end();
                 ((AsyncSocket) socket).close();
             } else if (socket instanceof AsyncServerSocket) {
                 ((AsyncServerSocket) socket).stop();
