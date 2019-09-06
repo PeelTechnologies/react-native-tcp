@@ -168,7 +168,7 @@ public final class TcpSocketManager {
         Handler handler = new Handler(Looper.getMainLooper());
         mSocketReaders.put(cId, handler);
 
-        final int delay = 500;
+        final int delay = 100;
         handler.postDelayed(new Runnable(){
             public void run(){
                 try {
