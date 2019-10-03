@@ -15,9 +15,6 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
 {
 @private
     GCDAsyncSocket *_tcpSocket;
-    NSMutableDictionary<NSNumber *, RCTResponseSenderBlock> *_pendingSends;
-    NSLock *_lock;
-    long _sendTag;
 }
 
 - (id)initWithClientId:(NSNumber *)clientID andConfig:(id<SocketClientDelegate>)aDelegate;
@@ -43,8 +40,6 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     if (self) {
         _id = clientID;
         _clientDelegate = aDelegate;
-        _pendingSends = [NSMutableDictionary dictionary];
-        _lock = [[NSLock alloc] init];
         _tcpSocket = tcpSocket;
         [_tcpSocket setUserData: clientID];
     }
@@ -134,58 +129,24 @@ NSString *const RCTTCPErrorDomain = @"RCTTCPErrorDomain";
     return isListening;
 }
 
-- (void)setPendingSend:(RCTResponseSenderBlock)callback forKey:(NSNumber *)key
-{
-    [_lock lock];
-    @try {
-        [_pendingSends setObject:callback forKey:key];
-    }
-    @finally {
-        [_lock unlock];
-    }
-}
-
-- (RCTResponseSenderBlock)getPendingSend:(NSNumber *)key
-{
-    [_lock lock];
-    @try {
-        return [_pendingSends objectForKey:key];
-    }
-    @finally {
-        [_lock unlock];
-    }
-}
-
-- (void)dropPendingSend:(NSNumber *)key
-{
-    [_lock lock];
-    @try {
-        [_pendingSends removeObjectForKey:key];
-    }
-    @finally {
-        [_lock unlock];
-    }
-}
-
 - (void)socket:(GCDAsyncSocket *)sock didWriteDataWithTag:(long)msgTag
 {
     NSNumber* tagNum = [NSNumber numberWithLong:msgTag];
-    RCTResponseSenderBlock callback = [self getPendingSend:tagNum];
+    RCTResponseSenderBlock callback = [_clientDelegate getPendingSend:tagNum];
     if (callback) {
         callback(@[]);
-        [self dropPendingSend:tagNum];
+        [_clientDelegate dropPendingSend:tagNum];
     }
 }
 
 - (void) writeData:(NSData *)data
           callback:(RCTResponseSenderBlock)callback
 {
+    NSNumber *sendTag = [_clientDelegate getNextTag];
     if (callback) {
-        [self setPendingSend:callback forKey:@(_sendTag)];
+        [_clientDelegate setPendingSend:callback forKey:sendTag];
     }
-    [_tcpSocket writeData:data withTimeout:-1 tag:_sendTag];
-
-    _sendTag++;
+    [_tcpSocket writeData:data withTimeout:-1 tag:sendTag.longValue];
 
     [_tcpSocket readDataWithTimeout:-1 tag:_id.longValue];
 }
