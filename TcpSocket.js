@@ -8,7 +8,10 @@
 
 'use strict';
 
-global.process = global.process || require('process'); // needed to make stream-browserify happy
+if(!(global.process && global.process.nextTick)){
+  global.process = require('process'); // needed to make stream-browserify happy
+}
+
 var Buffer = global.Buffer = global.Buffer || require('buffer').Buffer;
 
 var util = require('util');
