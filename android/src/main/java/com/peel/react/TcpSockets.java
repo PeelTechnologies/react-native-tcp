@@ -5,7 +5,7 @@
 
 package com.peel.react;
 
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.util.Base64;
 
 import com.facebook.common.logging.FLog;

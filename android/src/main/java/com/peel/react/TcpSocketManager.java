@@ -1,7 +1,7 @@
 package com.peel.react;
 
 import android.os.Looper;
-import android.support.annotation.Nullable;
+import androidx.annotation.Nullable;
 import android.util.SparseArray;
 
 import com.koushikdutta.async.AsyncNetworkSocket;
