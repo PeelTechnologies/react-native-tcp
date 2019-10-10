@@ -1,6 +1,7 @@
 package com.peel.react;
 
-import android.support.annotation.Nullable;
+import android.os.Looper;
+import androidx.annotation.Nullable;
 import android.util.SparseArray;
 
 import com.koushikdutta.async.AsyncNetworkSocket;
@@ -15,17 +16,24 @@ import com.koushikdutta.async.callback.ConnectCallback;
 import com.koushikdutta.async.callback.DataCallback;
 import com.koushikdutta.async.callback.ListenCallback;
 
+import java.io.InputStream;
 import java.io.IOException;
 import java.lang.ref.WeakReference;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 
+import android.net.LocalSocket;
+import android.net.LocalSocketAddress;
+import android.os.Handler;
+
+
 /**
  * Created by aprock on 12/29/15.
  */
 public final class TcpSocketManager {
     private SparseArray<Object> mClients = new SparseArray<Object>();
+    private SparseArray<Handler> mSocketReaders = new SparseArray<Handler>();
 
     private WeakReference<TcpSocketListener> mListener;
     private AsyncServer mServer = AsyncServer.getDefault();
@@ -146,10 +154,63 @@ public final class TcpSocketManager {
         });
     }
 
+    public void connectIPC(final Integer cId, final String path) throws IOException {
+        // resolve the address
+        LocalSocketAddress socketAddress = new LocalSocketAddress(path, LocalSocketAddress.Namespace.FILESYSTEM);
+        LocalSocket socket = new LocalSocket();
+        socket.connect(socketAddress);
+        mClients.put(cId, socket);
+        TcpSocketListener listener = mListener.get();
+        if (listener != null) {
+            listener.onConnect(cId, socketAddress);
+        }
+
+        Handler handler = new Handler(Looper.getMainLooper());
+        mSocketReaders.put(cId, handler);
+
+        final int delay = 300;
+        handler.postDelayed(new Runnable(){
+            public void run(){
+                try {
+                    Object socket = mClients.get(cId);
+                    if (socket != null && socket instanceof LocalSocket) {
+                        LocalSocket localSocket = (LocalSocket)socket;
+                        InputStream inputStream = localSocket.getInputStream();
+                        while (inputStream.available() > 0) {
+                            byte[] targetArray = new byte[inputStream.available()];
+                            inputStream.read(targetArray);
+                            TcpSocketListener listener = mListener.get();
+                            if (listener != null) {
+                                listener.onData(cId, targetArray);
+                            }
+                        }
+                    }
+                } catch (IOException e) {
+                    TcpSocketListener listener = mListener.get();
+                    if (listener != null) {
+                        listener.onError(cId, e.getMessage());
+                    }
+                }
+
+                Handler handler = mSocketReaders.get(cId);
+                handler.postDelayed(this, delay);
+            }
+        }, delay);
+    }
+
     public void write(final Integer cId, final byte[] data) {
         Object socket = mClients.get(cId);
         if (socket != null && socket instanceof AsyncSocket) {
             ((AsyncSocket) socket).write(new ByteBufferList(data));
+        } else if (socket != null && socket instanceof LocalSocket) {
+            try {
+                ((LocalSocket) socket).getOutputStream().write(data);
+            } catch (IOException e) {
+                TcpSocketListener listener = mListener.get();
+                if (listener != null) {
+                    listener.onError(cId, e.getMessage());
+                }
+            }
         }
     }
 
@@ -160,6 +221,27 @@ public final class TcpSocketManager {
                 ((AsyncSocket) socket).close();
             } else if (socket instanceof AsyncServerSocket) {
                 ((AsyncServerSocket) socket).stop();
+            } else if (socket instanceof LocalSocket) {
+                try {
+                    ((LocalSocket) socket).getOutputStream().close();
+                    ((LocalSocket) socket).close();
+
+                    Handler handler = mSocketReaders.get(cId);
+                    if (handler != null) {
+                        handler.removeCallbacksAndMessages(null);
+                        mSocketReaders.remove(cId);
+                    }
+
+                    TcpSocketListener listener = mListener.get();
+                    if (listener != null) {
+                        listener.onClose(cId, null);
+                    }
+                } catch (IOException e) {
+                    TcpSocketListener listener = mListener.get();
+                    if (listener != null) {
+                        listener.onError(cId, e.getMessage());
+                    }
+                }
             }
         } else {
             TcpSocketListener listener = mListener.get();
