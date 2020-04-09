@@ -6,13 +6,9 @@
  * @flow
  */
 
-'use strict';
-
 var util = require('util');
 var EventEmitter = require('events').EventEmitter;
-var {
-  NativeModules
-} = require('react-native');
+var { NativeModules } = require('react-native');
 var Sockets = NativeModules.TcpSockets;
 
 var Socket = require('./TcpSocket');
@@ -31,16 +27,16 @@ function TcpServer(connectionListener: (socket: Socket) => void) {
   this._socket = new Socket();
 
   // $FlowFixMe: suppressing this error flow doesn't like EventEmitter
-  this._socket.on('connect', function() {
+  this._socket.on('connect', function () {
     self.emit('listening');
   });
   // $FlowFixMe: suppressing this error flow doesn't like EventEmitter
-  this._socket.on('connection', function(socket) {
+  this._socket.on('connection', function (socket) {
     self._connections++;
     self.emit('connection', socket);
   });
   // $FlowFixMe: suppressing this error flow doesn't like EventEmitter
-  this._socket.on('error', function(error) {
+  this._socket.on('error', function (error) {
     self.emit('error', error);
   });
 
@@ -53,7 +49,7 @@ function TcpServer(connectionListener: (socket: Socket) => void) {
 
 util.inherits(TcpServer, EventEmitter);
 
-TcpServer.prototype._debug = function() {
+TcpServer.prototype._debug = function () {
   if (__DEV__) {
     var args = [].slice.call(arguments);
     console.log.apply(console, args);
@@ -61,7 +57,7 @@ TcpServer.prototype._debug = function() {
 };
 
 // TODO : determine how to properly overload this with flow
-TcpServer.prototype.listen = function() : TcpServer {
+TcpServer.prototype.listen = function (): TcpServer {
   var args = this._socket._normalizeConnectArgs(arguments);
   var options = args[0];
   var callback = args[1];
@@ -79,17 +75,23 @@ TcpServer.prototype.listen = function() : TcpServer {
   return this;
 };
 
-TcpServer.prototype.getConnections = function(callback: (err: ?any, count: number) => void) {
+TcpServer.prototype.getConnections = function (
+  callback: (err: ?any, count: number) => void,
+) {
   if (typeof callback === 'function') {
     callback.invoke(null, this._connections);
   }
 };
 
-TcpServer.prototype.address = function() : { port: number, address: string, family: string } {
+TcpServer.prototype.address = function (): {
+  port: number,
+  address: string,
+  family: string,
+} {
   return this._socket ? this._socket.address() : {};
 };
 
-TcpServer.prototype.close = function(callback: ?() => void) {
+TcpServer.prototype.close = function (callback: ?() => void) {
   if (typeof callback === 'function') {
     if (!this._socket) {
       this.once('close', function close() {
@@ -111,6 +113,8 @@ TcpServer.prototype.close = function(callback: ?() => void) {
 };
 
 // unimplemented net.Server apis
-TcpServer.prototype.ref = TcpServer.prototype.unref = function() { /* nop */ };
+TcpServer.prototype.ref = TcpServer.prototype.unref = function () {
+  /* nop */
+};
 
 module.exports = TcpServer;
