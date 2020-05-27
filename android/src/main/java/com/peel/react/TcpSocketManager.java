@@ -81,13 +81,19 @@ public final class TcpSocketManager {
         }
 
         mServer.listen(InetAddress.getByName(host), port, new ListenCallback() {
+            InetSocketAddress localAddress = socketAddress;
+
             @Override
             public void onListening(AsyncServerSocket socket) {
                 mClients.put(cId, socket);
 
+                if(socketAddress.getPort() != socket.getLocalPort()) {
+                    localAddress = new InetSocketAddress(socketAddress.getAddress(), socket.getLocalPort());
+                }
+
                 TcpSocketListener listener = mListener.get();
                 if (listener != null) {
-                    listener.onConnect(cId, socketAddress);
+                    listener.onConnect(cId, localAddress);
                 }
             }
 
@@ -97,7 +103,7 @@ public final class TcpSocketManager {
                 mClients.put(mInstances, socket);
 
                 AsyncNetworkSocket socketConverted = Util.getWrappedSocket(socket, AsyncNetworkSocket.class);
-                InetSocketAddress remoteAddress = socketConverted != null ? socketConverted.getRemoteAddress() : socketAddress;
+                InetSocketAddress remoteAddress = socketConverted != null ? socketConverted.getRemoteAddress() : localAddress;
 
                 TcpSocketListener listener = mListener.get();
                 if (listener != null) {
