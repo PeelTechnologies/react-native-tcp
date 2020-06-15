@@ -10,7 +10,6 @@
 		13BE3DEE1AC21097009241FE /* TcpSockets.m in Sources */ = {isa = PBXBuildFile; fileRef = 13BE3DED1AC21097009241FE /* TcpSockets.m */; };
 		7350006B1AFF9AB600ED3C82 /* TcpSocketClient.m in Sources */ = {isa = PBXBuildFile; fileRef = 7350006A1AFF9AB600ED3C82 /* TcpSocketClient.m */; };
 		73D9377D1AFF9EBE00450142 /* CFNetwork.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 73D9377C1AFF9EBE00450142 /* CFNetwork.framework */; };
-		96EDB0AC1C10C33B00D41E94 /* GCDAsyncSocket.m in Sources */ = {isa = PBXBuildFile; fileRef = 96EDB0AB1C10C33B00D41E94 /* GCDAsyncSocket.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -32,8 +31,6 @@
 		735000691AFF9AB600ED3C82 /* TcpSocketClient.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TcpSocketClient.h; sourceTree = "<group>"; };
 		7350006A1AFF9AB600ED3C82 /* TcpSocketClient.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TcpSocketClient.m; sourceTree = "<group>"; };
 		73D9377C1AFF9EBE00450142 /* CFNetwork.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CFNetwork.framework; path = System/Library/Frameworks/CFNetwork.framework; sourceTree = SDKROOT; };
-		96EDB0AA1C10C33B00D41E94 /* GCDAsyncSocket.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = GCDAsyncSocket.h; sourceTree = "<group>"; };
-		96EDB0AB1C10C33B00D41E94 /* GCDAsyncSocket.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = GCDAsyncSocket.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -134,7 +131,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				96EDB0AC1C10C33B00D41E94 /* GCDAsyncSocket.m in Sources */,
 				7350006B1AFF9AB600ED3C82 /* TcpSocketClient.m in Sources */,
 				13BE3DEE1AC21097009241FE /* TcpSockets.m in Sources */,
 			);

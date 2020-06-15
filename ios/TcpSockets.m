@@ -14,6 +14,15 @@
 // offset native ids by 5000
 #define COUNTER_OFFSET 5000
 
+@interface TcpSockets() {
+
+@private
+    NSMutableDictionary<NSNumber *, RCTResponseSenderBlock> *_pendingSends;
+    NSLock *_lock;
+    long _tag;
+}
+@end
+
 @implementation TcpSockets
 {
     NSMutableDictionary<NSNumber *,TcpSocketClient *> *_clients;
@@ -21,6 +30,19 @@
 }
 
 RCT_EXPORT_MODULE()
+
+- (id)init {
+    self = [super init];
+    if (self) {
+        _pendingSends = [NSMutableDictionary dictionary];
+        _lock = [[NSLock alloc] init];
+    }
+    return self;
+}
+
+- (NSNumber*)getNextTag {
+    return [NSNumber numberWithLong:_tag++];
+}
 
 - (NSArray<NSString *> *)supportedEvents
 {
@@ -198,6 +220,39 @@ RCT_EXPORT_METHOD(listen:(nonnull NSNumber*)cId
 
 -(NSNumber*)getNextId {
     return @(_counter++ + COUNTER_OFFSET);
+}
+
+- (void)setPendingSend:(RCTResponseSenderBlock)callback forKey:(NSNumber *)key
+{
+    [_lock lock];
+    @try {
+        [_pendingSends setObject:callback forKey:key];
+    }
+    @finally {
+        [_lock unlock];
+    }
+}
+
+- (RCTResponseSenderBlock)getPendingSend:(NSNumber *)key
+{
+    [_lock lock];
+    @try {
+        return [_pendingSends objectForKey:key];
+    }
+    @finally {
+        [_lock unlock];
+    }
+}
+
+- (void)dropPendingSend:(NSNumber *)key
+{
+    [_lock lock];
+    @try {
+        [_pendingSends removeObjectForKey:key];
+    }
+    @finally {
+        [_lock unlock];
+    }
 }
 
 @end
