@@ -40,6 +40,6 @@ repositories {
 }
 
 dependencies {
-    compile 'com.facebook.react:react-native:+'
-    compile 'com.koushikdutta.async:androidasync:2.1.6'
+    implementation 'com.facebook.react:react-native:+'
+    implementation 'com.koushikdutta.async:androidasync:2.1.6'
 }
